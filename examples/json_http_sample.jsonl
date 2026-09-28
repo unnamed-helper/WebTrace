@@ -1,0 +1,3 @@
+{"timestamp":"2026-09-28T04:10:01+04:00","hostname":"web01","serverIP":"10.0.0.10","serverPort":443,"clientIP":"198.51.100.14","method":"GET","uri":"/reports/monthly.xlsx","status":200,"responseBytes":6291456,"userAgent":"Mozilla/5.0","referrer":"-"}
+{"timestamp":"2026-09-28T04:10:02+04:00","hostname":"web01","serverIP":"10.0.0.10","serverPort":443,"clientIP":"198.51.100.15","method":"GET","uri":"/admin","status":403,"responseBytes":512,"userAgent":"scanner-example/1.0","referrer":"-"}
+{"timestamp":"2026-09-28T04:10:03+04:00","hostname":"web01","serverIP":"10.0.0.10","serverPort":443,"clientIP":"198.51.100.16","method":"POST","uri":"/api/upload/document","status":201,"responseBytes":512,"userAgent":"Mozilla/5.0","referrer":"https://portal.example/"}

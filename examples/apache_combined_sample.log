@@ -1,0 +1,4 @@
+198.51.100.10 - - [28/Sep/2026:08:10:01 +0400] "GET /index.html HTTP/1.1" 200 1842 "-" "Mozilla/5.0"
+198.51.100.20 - - [28/Sep/2026:08:10:04 +0400] "GET /reports/customer_data.xlsx HTTP/1.1" 200 7340032 "-" "Mozilla/5.0"
+10.10.20.15 - - [28/Sep/2026:08:10:07 +0400] "POST /api/upload/document HTTP/1.1" 201 412 "https://portal.example/" "Mozilla/5.0"
+198.51.100.30 - - [28/Sep/2026:08:10:12 +0400] "GET /admin HTTP/1.1" 403 512 "-" "scanner-example/1.0"

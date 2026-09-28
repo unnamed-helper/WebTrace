@@ -1,0 +1,7 @@
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2026-09-28 04:10:00
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) sc-status sc-substatus sc-win32-status time-taken
+2026-09-28 04:10:01 10.0.0.10 GET /index.html - 443 - 198.51.100.11 Mozilla/5.0 200 0 0 24
+2026-09-28 04:10:05 10.0.0.10 GET /download/report.csv export=1 443 user1 198.51.100.12 Mozilla/5.0 200 0 0 180
+2026-09-28 04:10:09 10.0.0.10 POST /api/upload/file - 443 user2 198.51.100.13 Mozilla/5.0 201 0 0 44
