@@ -1,13 +1,7 @@
 # WebTrace — Project Summary
 **Author:** Arslan Sabir
 
-## One-line summary
-
-WebTrace is a local, browser-based HTTP log analysis and DFIR triage tool designed for analysts who need to investigate web logs without sending evidence to an external platform.
-
-## Short GitHub description
-
-> Air-gapped, browser-based HTTP log analysis and DFIR triage tool with local parsing, threat detection, behavioral indicators, filtering, export, and IR playbooks.
+WebTrace is a local, browser-based HTTP log analysis and DFIR triage tool designed for analysts who need to investigate web logs without sending evidence to an external platform. Air-gapped, browser-based HTTP log analysis and DFIR triage tool with local parsing, threat detection, behavioral indicators, filtering, export, and IR playbooks.
 
 ## Detailed summary
 
