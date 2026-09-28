@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebTrace v1.0.0 — Initial Public Release</title>
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --card-bg: #0f1623;
+      --card-border: #1a2333;
+      --accent-purple: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --text-main: #f3f4f6;
+      --text-muted: #8b98a5;
+      --input-bg: #090d16;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 12px;
+      font-size: 12px;
+      overflow-x: hidden;
+    }
+
+    /* Header Bar */
+    .header-bar {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .brand-section { display: flex; align-items: center; gap: 8px; }
+    .brand-logo {
+      background: var(--accent-purple);
+      color: white;
+      font-weight: bold;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+    .brand-title { font-size: 15px; font-weight: bold; color: white; display: flex; align-items: center; gap: 8px; }
+    .version-tag {
+      background: #1e1b4b;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .controls-group { display: flex; align-items: center; gap: 8px; position: relative; }
+    .status-badge {
+      background: #161e2e;
+      border: 1px solid #243044;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #d1d5db;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pulse-dot { width: 7px; height: 7px; background: var(--accent-emerald); border-radius: 50%; }
+
+    /* Buttons */
+    .btn {
+      background-color: #161e2e;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .btn:hover { background-color: #243044; color: white; }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background-color: var(--accent-purple); color: white; border-color: #4f46e5; }
+    .btn-primary:hover { background-color: #4f46e5; }
+    .btn-danger { color: #f87171; border-color: rgba(244, 63, 94, 0.4); }
+    .btn-danger:hover { background-color: #451a03; border-color: #7f1d1d; }
+
+    /* Dropdown Menu for Export */
+    .dropdown-container { position: relative; display: inline-block; }
+    .dropdown-menu {
+      position: absolute; right: 0; top: 100%; margin-top: 4px; width: 130px;
+      background: #161e2e; border: 1px solid #243044; border-radius: 6px;
+      z-index: 50; display: none; padding: 4px; box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item {
+      padding: 6px 10px; color: #d1d5db; font-size: 11px; cursor: pointer; border-radius: 4px;
+      display: block; text-align: left; width: 100%; background: none; border: none; font-family: inherit;
+    }
+    .dropdown-item:hover { background: #243044; color: white; }
+
+    /* KPI Cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .kpi-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .kpi-card:hover { border-color: var(--accent-purple); transform: translateY(-1px); }
+    #kpiCardIps { cursor: pointer; }
+    .kpi-card.active { border-color: var(--accent-purple); background: #131b2e; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+    .kpi-title { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .kpi-value { font-size: 20px; font-weight: bold; margin-top: 4px; font-family: monospace; color: white; }
+
+    /* Filter Panel & Tabs */
+    .filter-panel {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .filter-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .filter-tabs-group { display: flex; gap: 6px; }
+    .filter-tab {
+      background: #161e2e; color: var(--text-muted); border: 1px solid var(--card-border);
+      padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .filter-tab.active { background: var(--accent-purple); color: white; border-color: #4f46e5; }
+    
+    .pill-group { display: flex; align-items: center; gap: 4px; }
+    .ip-pill {
+      background: #161e2e;
+      color: #9ca3af;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ip-pill.active { background: var(--accent-purple); color: white; }
+    
+    .filter-inputs-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .field-group label { display: block; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: bold; }
+    
+    input.ui-input, select.ui-select {
+      width: 100%;
+      background-color: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: white;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      outline: none;
+    }
+
+    /* Dashboard Grid */
+    .charts-grid { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 12px; 
+      margin-bottom: 12px; 
+      width: 100%;
+    }
+    .chart-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px;
+      height: 220px;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; height: 18px; }
+    .chart-title { font-size: 11px; font-weight: bold; color: #00d8f6; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chart-box { position: relative; flex: 1; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
+
+    /* SVG Doughnut & Legend Layout */
+    .chart-container-split { display: flex; align-items: center; width: 100%; height: 100%; gap: 8px; }
+    .doughnut-svg-wrapper { width: 100px; height: 100px; flex-shrink: 0; }
+    .chart-legend-box { flex: 1; height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; }
+    .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; padding: 2px 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.02); }
+    .legend-key { display: flex; align-items: center; gap: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .legend-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .svg-chart { width: 100%; height: 100%; display: block; }
+    .mini-table { width:100%; border-collapse:collapse; font-size:10px; table-layout:fixed; }
+    .mini-table th { color:#718096; text-transform:uppercase; font-size:9px; font-weight:700; padding:5px 6px; text-align:left; border-bottom:1px solid #1a2333; }
+    .mini-table td { padding:5px 6px; border-bottom:1px solid rgba(36,48,68,.55); color:#d1d5db; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mini-table tr:hover td { background:rgba(99,102,241,.05); }
+    .mini-action { padding:2px 5px; font-size:9px; border:1px solid #334155; border-radius:4px; background:#161e2e; color:#818cf8; cursor:pointer; }
+    .mini-action.exclude { color:#f43f5e; border-color:#7f1d1d; }
+    .mini-ip-link { color:#38bdf8; font-weight:700; cursor:pointer; text-decoration:none; }
+    .mini-ip-link:hover { text-decoration:underline; }
+    .mini-uri-link { color:#d1d5db; cursor:pointer; }
+    #uniqueIpModal { display:none; align-items:center; justify-content:center; }
+    #uniqueIpModal.show { display:flex; }
+    .modal-content { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; box-shadow:0 20px 50px rgba(0,0,0,.55); }
+
+    /* Main Log Stream Table */
+    .table-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .table-header { padding: 8px 12px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+    .table-wrapper { overflow-x: auto; max-height: 480px; position: relative; }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; table-layout: fixed; }
+    th {
+      background: #111927;
+      color: #8b98a5;
+      padding: 7px 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+      position: sticky; top: 0; z-index: 10;
+      user-select: none;
+    }
+    th.sortable { cursor: pointer; }
+    th.sortable:hover { color: white; background: #1a2536; }
+
+    .resizer {
+      position: absolute; right: 0; top: 0; width: 5px; cursor: col-resize; user-select: none; height: 100%; z-index: 15;
+    }
+    .resizer:hover, .resizing { background-color: var(--accent-purple); }
+    
+    td { padding: 6px 10px; border-bottom: 1px solid rgba(26, 35, 51, 0.6); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    tbody tr.clickable-row { cursor: pointer; transition: background 0.12s ease; }
+    tbody tr.clickable-row:hover { background: rgba(99, 102, 241, 0.12); }
+
+    .badge-status { padding: 2px 5px; border-radius: 4px; font-size: 9px; font-weight: bold; }
+    .status-2xx { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .status-3xx { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .status-4xx { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .status-5xx { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+
+    .table-footer { padding: 8px 12px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+
+    /* Column Toggle Menu */
+    .col-toggle-menu {
+      position: absolute; right: 0; top: 100%; margin-top: 4px; width: 200px;
+      background: #161e2e; border: 1px solid #243044; border-radius: 6px;
+      z-index: 50; display: none; padding: 6px; box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+    .col-toggle-menu.show { display: block; }
+    .col-toggle-item {
+      display: flex; align-items: center; gap: 8px; padding: 4px 6px;
+      color: #d1d5db; font-size: 11px; cursor: pointer; border-radius: 4px; user-select: none;
+    }
+    .col-toggle-item:hover { background: #243044; color: white; }
+    .col-toggle-item input { cursor: pointer; accent-color: var(--accent-purple); }
+
+    /* Drawer Inspector */
+    .drawer-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .drawer-overlay.show { opacity: 1; pointer-events: auto; }
+    
+    .right-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 720px; max-width: 95vw;
+      background: #0b1019; border-left: 1px solid var(--card-border);
+      z-index: 210; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.7);
+    }
+    .drawer-overlay.show .right-drawer { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 12px 16px; background: #0f1623; border-bottom: 1px solid var(--card-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    
+    .meta-box {
+      background: #070a12; border: 1px solid var(--card-border); border-radius: 6px; padding: 10px;
+      font-family: monospace; display: flex; flex-direction: column; justify-content: center;
+    }
+    .meta-box label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
+
+    pre.raw-payload {
+      background: #04060a; border: 1px solid var(--card-border); border-radius: 6px; padding: 10px;
+      color: #818cf8; font-family: monospace; font-size: 10px; white-space: pre-wrap; word-break: break-all;
+      max-height: 120px; overflow-y: auto;
+    }
+
+    .playbook-box {
+      background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 6px; padding: 12px; color: #d1d5db; line-height: 1.4;
+    }
+
+    /* ===== Old IR screenshot frontend: compact forensic filter row ===== */
+    .screenshot-filter-panel { padding: 12px 20px 14px; }
+    .screenshot-filter-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px; }
+    .screenshot-filter-title { color:#d1d5db; font-size:14px; font-weight:800; letter-spacing:.2px; }
+    .screenshot-filter-grid { display:grid; grid-template-columns:1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr; gap:12px; align-items:end; }
+    .screenshot-filter-grid .field-group label { display:block; margin-bottom:7px; font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.15px; }
+    .screenshot-filter-grid .ui-input, .screenshot-filter-grid .ui-select { width:100%; min-height:36px; box-sizing:border-box; }
+    .screenshot-filter-grid .field-group:nth-child(2) label { color:#f43f5e; }
+    .screenshot-filter-panel .ip-pill { padding:7px 12px; font-size:12px; border-radius:6px; }
+    .screenshot-filter-panel .ip-pill.active { background:#6366f1; color:#fff; }
+    @media (max-width:1100px) { .screenshot-filter-grid { grid-template-columns:repeat(3,1fr); } }
+    @media (max-width:700px) { .screenshot-filter-header { align-items:flex-start; flex-direction:column; } .screenshot-filter-grid { grid-template-columns:1fr; } }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed; bottom: 16px; right: 16px; z-index: 300; background: #1e1b4b; color: #c7d2fe;
+      border: 1px solid #4f46e5; padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 500;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); transform: translateY(100%); opacity: 0; transition: all 0.2s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Modal dialog for About & Debug */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px);
+      z-index: 250; display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-content {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
+      width: 500px; max-width: 90vw; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-title { font-size: 14px; font-weight: bold; color: white; text-transform: uppercase; }
+      .client-ip-link { cursor:pointer; text-decoration:none; border-bottom:1px dotted currentColor; }
+    .client-ip-link:hover { text-decoration:underline; filter:brightness(1.25); }
+
+
+    /* ===== FINAL OLD-UI COMPACT SIZING ===== */
+    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .kpi-card { padding: 8px 12px; min-height: 68px; height: 68px; }
+    .kpi-title { font-size: 11px; line-height: 1.2; }
+    .kpi-value { font-size: 19px; margin-top: 3px; line-height: 1.1; }
+
+    .filter-panel { padding: 8px 12px 9px; margin-bottom: 10px; }
+    .filter-top-row { margin-bottom: 7px; min-height: 20px; }
+    .filter-title { font-size: 13px; line-height: 1.2; }
+    .pill-group { gap: 3px; }
+    .ip-pill { padding: 3px 7px; font-size: 10px; }
+    .filter-inputs-grid { gap: 7px; }
+    .field-group label { font-size: 9px; margin-bottom: 3px; }
+    input.ui-input, select.ui-select { padding: 4px 7px; min-height: 30px; height: 30px; font-size: 10.5px; }
+
+    .mini-table th { padding: 4px 5px; }
+    .mini-table td { padding: 4px 5px; }
+    .mini-action { padding: 2px 4px; font-size: 8px; line-height: 1.1; }
+    .mini-table .action-cell { white-space: nowrap; text-align: right; overflow: visible; }
+    .mini-table .action-cell .mini-action { margin-left: 2px; }
+
+    /* Keep the URI action column wide enough for BOTH Filter and Exclude. */
+    #topUriTbody td:last-child { overflow: visible; text-overflow: clip; }
+
+    @media (max-width: 900px) {
+      .kpi-card { height: 64px; min-height: 64px; padding: 7px 10px; }
+      .kpi-value { font-size: 18px; }
+    }
+
+  
+
+    /* ===== FINAL UI POLISH / COMPACT OLD-UI SIZING ===== */
+    body { padding: 8px; font-size: 11px; }
+    .header-bar { padding: 6px 10px; margin-bottom: 8px; min-height: 38px; }
+    .brand-section { gap: 6px; }
+    .brand-logo { width: 24px; height: 24px; font-size: 10px; }
+    .brand-title { font-size: 12px; }
+    .controls-group { gap: 5px; }
+    .status-badge { padding: 4px 7px; font-size: 10px; gap: 5px; }
+    .btn { padding: 4px 8px; font-size: 10px; line-height: 1.1; border-radius: 5px; gap: 4px; }
+
+    /* KPI: compact, balanced and consistent with the original frontend */
+    .kpi-grid { gap: 8px; margin-bottom: 8px; }
+    .kpi-card { height: 58px; min-height: 58px; padding: 7px 10px; border-radius: 7px; }
+    .kpi-title { font-size: 10px; line-height: 1.15; }
+    .kpi-value { font-size: 18px; margin-top: 3px; line-height: 1; }
+
+    /* Granular filter: keep the original compact one-row control block */
+    .filter-panel { padding: 7px 10px 8px; margin-bottom: 8px; border-radius: 7px; }
+    .filter-top-row { margin-bottom: 6px; min-height: 18px; }
+    .filter-title { font-size: 12px; line-height: 1.1; }
+    .pill-group { gap: 3px; }
+    .ip-pill { padding: 3px 6px; font-size: 9px; line-height: 1.1; }
+    #btnReset { padding: 3px 6px !important; font-size: 9px !important; }
+    .filter-inputs-grid { gap: 6px; }
+    .field-group label { font-size: 8.5px; margin-bottom: 2px; line-height: 1.1; }
+    input.ui-input, select.ui-select { height: 28px; min-height: 28px; padding: 4px 7px; font-size: 10px; border-radius: 5px; box-sizing: border-box; }
+
+    /* Dashboard cards/buttons */
+    .charts-grid { gap: 8px; margin-bottom: 8px; }
+    .chart-card { height: 205px; padding: 8px; border-radius: 7px; }
+    .chart-header { margin-bottom: 6px; height: 16px; }
+    .chart-title { font-size: 10px; letter-spacing: .35px; }
+    .doughnut-svg-wrapper { width: 88px; height: 88px; }
+    .chart-container-split { gap: 6px; }
+    .chart-legend-box { gap: 3px; }
+    .legend-item { font-size: 9px; padding: 2px 3px; }
+    .mini-table { font-size: 9px; }
+    .mini-table th { font-size: 8px; padding: 4px 4px; }
+    .mini-table td { padding: 4px 4px; }
+    .mini-action { padding: 2px 4px; font-size: 8px; line-height: 1; }
+
+    /* Unique Client IP Inspector: compact instead of oversized modal */
+    #uniqueIpModal .modal-content { width: 620px !important; max-width: 78vw !important; padding: 9px !important; border-radius: 7px; }
+    #uniqueIpModal .modal-header { margin-bottom: 7px; }
+    #uniqueIpModal .modal-header strong { font-size: 11px; }
+    #uniqueIpModal #btnCloseIpModal { padding: 2px 6px !important; font-size: 10px !important; }
+    #uniqueIpModal > .modal-content > div:nth-child(2) { max-height: 270px !important; }
+    #uniqueIpModal .mini-table { font-size: 9px !important; }
+    #uniqueIpModal .mini-table th { padding: 5px !important; font-size: 8px; }
+    #uniqueIpModal .mini-table td { padding: 5px !important; }
+
+    /* Main Forensic Log Stream controls */
+    .table-header { padding: 6px 9px; }
+    .table-header .btn { padding: 3px 7px; font-size: 9px; }
+    .table-wrapper { max-height: 460px; }
+    table { font-size: 10px; }
+    th { padding: 6px 7px; font-size: 9px; }
+    td { padding: 5px 7px; }
+    .badge-status { padding: 2px 4px; font-size: 8px; }
+
+    /* Keep action cells compact but always visible */
+    .mini-table .action-cell { white-space: nowrap; overflow: visible; }
+    .mini-table .action-cell .mini-action { margin-left: 2px; }
+    #topUriTbody td:last-child, #topIpTbody td:last-child { overflow: visible; white-space: nowrap; }
+
+    @media (max-width: 900px) {
+      .kpi-card { height: 54px; min-height: 54px; padding: 6px 8px; }
+      .kpi-value { font-size: 17px; }
+      .chart-card { height: 200px; }
+    }
+
+
+    /* ===== FINAL RESPONSIVE DISPLAY + ICON SCALE FIX ===== */
+    html {
+      background: var(--bg-dark);
+      min-width: 0;
+      width: 100%;
+      min-height: 100%;
+    }
+
+    /* The application must use the actual viewport instead of being capped at
+       1920px. A 3440x1440 ultrawide therefore gets the available horizontal
+       space while the controls remain compact. */
+    body {
+      width: 100%;
+      max-width: none;
+      min-width: 0;
+      min-height: 100vh;
+      margin: 0;
+      padding: clamp(6px, min(0.55vw, 1vh), 14px);
+      overflow-x: hidden;
+    }
+
+    /* SVG icons previously had no explicit dimensions, so the browser used the
+       default SVG viewport size and made them enormous. */
+    .icon {
+      width: 14px !important;
+      height: 14px !important;
+      min-width: 14px;
+      min-height: 14px;
+      max-width: 14px;
+      max-height: 14px;
+      display: inline-block;
+      flex: 0 0 14px;
+      vertical-align: middle;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .filter-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .kpi-title .icon {
+      width: 13px !important;
+      height: 13px !important;
+      min-width: 13px;
+      min-height: 13px;
+      max-width: 13px;
+      max-height: 13px;
+      flex-basis: 13px;
+    }
+
+    /* Do not let large screens make controls visually oversized. */
+    .kpi-grid,
+    .charts-grid,
+    .filter-panel,
+    .table-card,
+    .header-bar {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .kpi-card { min-width: 0; }
+    .kpi-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ================================================================
+       FLUID DESKTOP LAYOUT
+       The layout is driven by BOTH viewport width and viewport height.
+       Do not use a width-only "ultrawide" breakpoint: a 2560x1440
+       16:9 display must not receive the same vertical sizing as a
+       3440x1440 21:9 display.
+       ================================================================ */
+    @media (min-width: 1201px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: clamp(6px, min(0.35vw, 0.75vh), 12px);
+      }
+      .charts-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: clamp(6px, min(0.35vw, 0.75vh), 12px);
+      }
+      .filter-inputs-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: clamp(5px, min(0.25vw, 0.55vh), 8px);
+      }
+
+      /* Scale vertical components from viewport HEIGHT so changing from
+         3440x1440 to 1920x1080 does not leave the page vertically distorted. */
+      .chart-card {
+        height: clamp(190px, min(20vh, 12vw), 240px);
+      }
+      .table-wrapper {
+        max-height: clamp(360px, 42vh, 600px);
+      }
+      .filter-panel {
+        padding: clamp(8px, min(0.55vw, 0.9vh), 12px)
+                 clamp(10px, min(0.65vw, 1vh), 16px);
+      }
+      .kpi-card {
+        padding: clamp(7px, min(0.45vw, 0.8vh), 12px)
+                 clamp(9px, min(0.65vw, 1vh), 14px);
+      }
+    }
+
+    /* True ultrawide only: aspect ratio >= 2:1. This targets 3440x1440
+       without incorrectly treating 2560x1440 (16:9) as ultrawide. */
+    @media (min-width: 1800px) and (min-aspect-ratio: 2/1) {
+      .kpi-grid, .charts-grid {
+        gap: clamp(8px, min(0.35vw, 0.75vh), 14px);
+      }
+      .chart-card {
+        height: clamp(200px, min(18vh, 11vw), 245px);
+      }
+      .table-wrapper {
+        max-height: clamp(400px, 43vh, 620px);
+      }
+    }
+
+    /* Wide but short windows: reduce vertical component height so the
+       application never becomes taller than the available viewport. */
+    @media (min-width: 1201px) and (max-height: 900px) {
+      .chart-card {
+        height: clamp(180px, 23vh, 215px);
+      }
+      .table-wrapper {
+        max-height: 38vh;
+      }
+    }
+
+    /* Very short ultrawide windows get the shortest chart/table density. */
+    @media (min-width: 1800px) and (min-aspect-ratio: 2/1) and (max-height: 900px) {
+      .chart-card {
+        height: clamp(175px, 22vh, 205px);
+      }
+      .table-wrapper {
+        max-height: 36vh;
+      }
+    }
+
+    /* 900-1200px: reduce columns instead of allowing controls to become cramped. */
+    @media (min-width: 901px) and (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+      .filter-inputs-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+      .charts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .chart-card { height: 205px; }
+    }
+
+    /* Tablet/mobile: keep every control inside the viewport. */
+    @media (max-width: 900px) {
+      body { padding: 6px; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+      .filter-inputs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+      .charts-grid { grid-template-columns: 1fr; gap: 8px; }
+      .chart-card { height: 200px; }
+    }
+
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .filter-top-row { align-items: flex-start; gap: 6px; }
+      .pill-group { flex-wrap: wrap; justify-content: flex-end; }
+      .filter-inputs-grid { grid-template-columns: 1fr; }
+      .header-bar { flex-wrap: wrap; gap: 6px; }
+      .controls-group { flex-wrap: wrap; justify-content: flex-end; }
+      #uniqueIpModal .modal-content { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; }
+    }
+
+    /* Keep the Unique Client IP Inspector compact at every viewport size. */
+    #uniqueIpModal .modal-content {
+      width: min(620px, calc(100vw - 32px)) !important;
+      max-width: calc(100vw - 32px) !important;
+      box-sizing: border-box;
+    }
+
+    /* Compact action controls so dashboard cards stay visually balanced. */
+    .mini-action {
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .mini-table .action-cell {
+      width: 1%;
+    }
+
+
+    /* ================================================================
+       FINAL VIEWPORT-INDEPENDENT LAYOUT FIX
+       Layout density is based on the usable viewport width AND height.
+       No fixed desktop canvas, no 1920px assumptions, and no width-only
+       ultrawide sizing. This keeps the same UI proportions when moving
+       between 21:9, 16:9, 16:10 and shorter laptop displays.
+       ================================================================ */
+    html, body { width:100%; min-width:0; max-width:none; }
+    body {
+      min-height:100dvh;
+      height:auto;
+      margin:0;
+      padding:clamp(6px, 0.55vw, 14px);
+      overflow-x:hidden;
+    }
+    .header-bar,
+    .kpi-grid,
+    .filter-panel,
+    .charts-grid,
+    .table-card { width:100%; max-width:none; min-width:0; }
+    .header-bar { min-width:0; }
+    .brand-section, .controls-group { min-width:0; }
+    .brand-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    @media (min-width:1201px) {
+      .kpi-grid, .charts-grid {
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:clamp(6px, min(0.34vw,0.7vh), 11px);
+      }
+      .filter-inputs-grid {
+        grid-template-columns:repeat(6,minmax(0,1fr));
+        gap:clamp(5px,min(0.24vw,0.55vh),8px);
+      }
+      .kpi-card {
+        height:clamp(54px, calc(50px + 0.75vh), 66px);
+        min-height:0;
+        padding:clamp(6px,0.55vh,10px) clamp(8px,0.42vw,13px);
+      }
+      .chart-card {
+        /* 1080p -> ~185px, 1440p -> ~220px; width cannot inflate height. */
+        height:clamp(180px, calc(130px + 6.25vh), 225px);
+        min-height:180px;
+      }
+      .table-wrapper {
+        max-height:clamp(330px, calc(260px + 22vh), 590px);
+      }
+      .filter-panel {
+        padding:clamp(7px,0.65vh,11px) clamp(9px,0.45vw,15px);
+      }
+    }
+
+    /* 16:9 and 16:10 desktop displays: keep the same density regardless of
+       whether the physical panel is 1920, 2560, 2880, etc. */
+    @media (min-width:1201px) and (max-aspect-ratio:199/100) {
+      .chart-card { height:clamp(178px, calc(126px + 6.1vh), 220px); }
+      .table-wrapper { max-height:clamp(330px, calc(255px + 21.5vh), 570px); }
+    }
+
+    /* True 21:9-class ultrawide: only the horizontal canvas grows; vertical
+       density stays tied to viewport height, preventing stretched cards. */
+    @media (min-width:2000px) and (min-aspect-ratio:20/9) {
+      .kpi-grid, .charts-grid { gap:clamp(7px,min(0.3vw,0.65vh),12px); }
+      .chart-card { height:clamp(185px,calc(135px + 6vh),225px); }
+      .table-wrapper { max-height:clamp(340px,calc(260px + 22vh),600px); }
+    }
+
+    /* Short desktop viewports: prioritize keeping the dashboard and controls
+       visually balanced instead of allowing a tall fixed card to dominate. */
+    @media (min-width:901px) and (max-height:900px) {
+      .chart-card { height:clamp(165px,21vh,195px); }
+      .table-wrapper { max-height:36vh; }
+      .kpi-card { height:54px; }
+    }
+
+    @media (min-width:901px) and (max-width:1200px) {
+      .kpi-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .filter-inputs-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .charts-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .chart-card { height:200px; }
+    }
+
+    @media (max-width:900px) {
+      body { padding:6px; }
+      .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+      .filter-inputs-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+      .charts-grid { grid-template-columns:1fr; gap:8px; }
+      .chart-card { height:200px; min-height:0; }
+      .header-bar { flex-wrap:wrap; }
+      .controls-group { flex-wrap:wrap; justify-content:flex-end; }
+    }
+    @media (max-width:600px) {
+      .filter-inputs-grid { grid-template-columns:1fr; }
+      .kpi-grid { grid-template-columns:1fr 1fr; }
+    }
+
+</style>
+</head>
+<body>
+
+  <!-- Top Header Bar -->
+  <header class="header-bar">
+    <div class="brand-section">
+      <div class="brand-logo">WT</div>
+      <div class="brand-title">
+        WebTrace
+        <span class="version-tag">v1.0.0</span>
+      </div>
+    </div>
+
+    <div class="controls-group">
+      <div class="status-badge">
+        <span class="pulse-dot"></span>
+        <span id="engineStatusText">ACTIVE (0 LOGS)</span>
+      </div>
+
+      <label class="btn btn-primary">
+        <span>📂 Upload Access Logs</span>
+        <input type="file" id="logFileInput" accept=".log,.txt,.csv,.json" multiple style="display: none;">
+      </label>
+
+      <!-- Export Dropdown Menu -->
+      <div class="dropdown-container">
+        <button id="btnExportToggle" class="btn">Export ▾</button>
+        <div class="dropdown-menu" id="exportDropdownMenu">
+          <button class="dropdown-item" onclick="exportLogs('json')">JSON Format</button>
+          <button class="dropdown-item" onclick="exportLogs('csv')">CSV Format</button>
+          <button class="dropdown-item" onclick="exportLogs('txt')">Text Format</button>
+        </div>
+      </div>
+
+      <button id="btnDebugLog" class="btn">⏱ Debug Log</button>
+      <button id="btnAbout" class="btn">ℹ️ About</button>
+      <button id="btnClearLogs" class="btn btn-danger">Clear</button>
+    </div>
+  </header>
+
+  <!-- KPI METRICS -->
+  <section class="kpi-grid">
+    <div class="kpi-card active" id="kpiCardAll" onclick="setKpiFilter('all')">
+      <div class="kpi-title">Total Requests</div>
+      <div class="kpi-value" id="kpiTotalRequests">0</div>
+    </div>
+    <div class="kpi-card" id="kpiCardThreats" onclick="setKpiFilter('threats')">
+      <div class="kpi-title" style="color:#f87171;">Threats Identified</div>
+      <div class="kpi-value" style="color:#f43f5e;" id="kpiThreatsDetected">0</div>
+    </div>
+    <div class="kpi-card" id="kpiCardClean" onclick="setKpiFilter('clean')">
+      <div class="kpi-title" style="color:#34d399;">Clean Traffic</div>
+      <div class="kpi-value" style="color:#10b981;" id="kpiCleanTraffic">0</div>
+    </div>
+    <div class="kpi-card" id="kpiCardIps" title="Click to open Unique IP Inspector" role="button" tabindex="0" onclick="openUniqueIpInspector()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openUniqueIpInspector();}">
+      <div class="kpi-title" style="color:#38bdf8; display:flex; justify-content:space-between; align-items:center;">
+        <span>Unique Client IPs</span>
+        <svg class="icon" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+      </div>
+      <div class="kpi-value" style="color:#06b6d4;" id="kpiUniqueIps">0</div>
+    </div>
+  </section>
+
+  <!-- FILTER PANEL -->
+  <section class="filter-panel">
+    <div class="filter-top-row">
+      <div class="filter-title">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+        <span>Granular Filter Controls</span>
+      </div>
+      <div class="pill-group">
+        <span class="ip-pill active" id="ipPillAll" onclick="setIpPillFilter('ALL')">All IPs</span>
+        <span class="ip-pill" id="ipPillPublic" onclick="setIpPillFilter('PUBLIC')">Public Only</span>
+        <span class="ip-pill" id="ipPillPrivate" onclick="setIpPillFilter('PRIVATE')">Private Only</span>
+        <button id="btnReset" class="btn" onclick="resetFilters()" style="padding: 2px 6px; font-size: 10px;">Reset Filters</button>
+      </div>
+    </div>
+
+    <div class="filter-inputs-grid">
+      <div class="field-group">
+        <label>Search Raw Log / Keyword</label>
+        <input type="text" id="searchInput" placeholder="Search complete raw log text..." class="ui-input">
+      </div>
+      <div class="field-group">
+        <label style="color:#f43f5e;">Exclude (Keyword / Status / IP)</label>
+        <input type="text" id="excludeSearchInput" placeholder="e.g. 200, 127.0.0.1, or Clean" class="ui-input" style="border-color:rgba(244,63,94,.4);">
+      </div>
+      <div class="field-group">
+        <label>Client IP Address</label>
+        <input type="text" id="ipAddressInput" placeholder="Filter IP e.g. 192.168.1.1" class="ui-input">
+      </div>
+      <div class="field-group">
+        <label>HTTP Status Code</label>
+        <select id="statusFilter" class="ui-select">
+          <option value="">All Status Codes</option>
+          <option value="2xx">2xx (Success)</option>
+          <option value="3xx">3xx (Redirection)</option>
+          <option value="4xx">4xx (Client Errors)</option>
+          <option value="5xx">5xx (Server Errors)</option>
+          <option value="200">200 OK</option><option value="301">301 Moved Permanently</option><option value="302">302 Found</option>
+          <option value="400">400 Bad Request</option><option value="401">401 Unauthorized</option><option value="403">403 Forbidden</option><option value="404">404 Not Found</option>
+          <option value="500">500 Internal Server Error</option><option value="502">502 Bad Gateway</option><option value="503">503 Service Unavailable</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>HTTP Method</label>
+        <select id="methodFilter" class="ui-select">
+          <option value="">All Methods</option><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="DELETE">DELETE</option><option value="PATCH">PATCH</option><option value="HEAD">HEAD</option><option value="OPTIONS">OPTIONS</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Threat Tag</label>
+        <select id="categoryFilter" class="ui-select"><option value="">All Events</option></select>
+      </div>
+    </div>
+
+    <div id="advancedBackendFilters" style="display:none;">
+      <input id="hostnameInput"><input id="pathInput"><input id="queryInput"><input id="usernameInput"><input id="userAgentInput"><input id="referrerInput"><input id="httpVersionInput"><input id="responseBytesInput"><input id="sourceInput">
+      <input id="excludeIpInput"><input id="excludeHostnameInput"><input id="excludeStatusInput"><input id="excludeMethodInput"><input id="excludePathInput"><input id="excludeQueryInput"><input id="excludeUsernameInput"><input id="excludeUserAgentInput"><input id="excludeReferrerInput"><input id="excludeHttpVersionInput"><input id="excludeResponseBytesInput"><input id="excludeSourceInput"><input id="excludeCategoryInput">
+    </div>
+  </section>
+
+  <!-- DASHBOARD CARDS ROW -->
+  <section class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">HTTP Status Codes</div></div>
+      <div class="chart-box" id="statusChartBox"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Top Requested URIs</div></div>
+      <div style="overflow-y:auto; flex:1;">
+        <table class="mini-table">
+          <thead><tr><th style="width:42%;">URI Path</th><th style="width:15%;">Hits</th><th style="width:43%;text-align:right;">Action</th></tr></thead>
+          <tbody id="topUriTbody"><tr><td colspan="3" style="color:#6b7280;text-align:center;padding-top:20px;">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Threat Categories</div></div>
+      <div class="chart-box" id="threatChartBox"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-title">Top Attacking / Source IPs</div></div>
+      <div style="overflow-y:auto; flex:1;">
+        <table class="mini-table">
+          <thead><tr><th style="width:38%;">Source IP</th><th style="width:14%;">Type</th><th style="width:14%;">Reqs</th><th style="width:34%;text-align:right;">Action</th></tr></thead>
+          <tbody id="topIpTbody"><tr><td colspan="4" style="color:#6b7280;text-align:center;padding-top:20px;">No data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNIQUE CLIENT IP INSPECTOR -->
+  <div id="uniqueIpModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:760px;width:90%;">
+      <div class="modal-header">
+        <strong>Unique Client IP Inspector (<span id="modalIpCount">0</span>)</strong>
+        <button id="btnCloseIpModal" class="btn" style="padding:2px 6px;">✕</button>
+      </div>
+      <div style="max-height:350px;overflow-y:auto;border:1px solid #1a2333;border-radius:6px;">
+        <table class="mini-table" style="font-size:11px;table-layout:auto;">
+          <thead><tr style="background:#0f1623;"><th style="padding:8px;">IP Address</th><th style="padding:8px;">Network Scope</th><th style="padding:8px;">Total Requests</th><th style="padding:8px;text-align:right;">Action</th></tr></thead>
+          <tbody id="uniqueIpTbody"><tr><td colspan="4" style="text-align:center;padding:12px;color:#6b7280;">No IP records loaded.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Normalized Log Stream Table -->
+  <section class="table-card">
+    <div class="table-header">
+      <div style="font-weight: bold; font-size: 11px; text-transform: uppercase; color: #d1d5db;">
+        Forensic Log Stream
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+          <span id="tableRecordCount" style="color: var(--text-muted); font-family: monospace; font-size: 11px;">Showing 0 entries</span>
+          <label style="color:var(--text-muted); font-size:10px; white-space:nowrap;">Logs/page
+            <select id="pageSizeSelect" class="ui-select" style="width:auto; min-width:62px; display:inline-block; padding:4px 6px; margin-left:4px;">
+              <option value="25">25</option><option value="50" selected>50</option><option value="100">100</option>
+            </select>
+          </label>
+        </div>
+        <div style="position: relative;">
+          <button class="btn" id="btnToggleCols">⚙️ Columns</button>
+          <div class="col-toggle-menu" id="colToggleMenu"><div class="col-toggle-item"><input type="checkbox" checked data-col="0"> Timestamp</div><div class="col-toggle-item"><input type="checkbox" checked data-col="1"> Hostname / Source</div><div class="col-toggle-item"><input type="checkbox" checked data-col="2"> Server IP</div><div class="col-toggle-item"><input type="checkbox" checked data-col="3"> Server Port</div><div class="col-toggle-item"><input type="checkbox" checked data-col="4"> Client IP</div><div class="col-toggle-item"><input type="checkbox" checked data-col="5"> Username</div><div class="col-toggle-item"><input type="checkbox" checked data-col="6"> Virtual Host</div><div class="col-toggle-item"><input type="checkbox" checked data-col="7"> Method</div><div class="col-toggle-item"><input type="checkbox" checked data-col="8"> Request URI</div><div class="col-toggle-item"><input type="checkbox" checked data-col="9"> Query String</div><div class="col-toggle-item"><input type="checkbox" checked data-col="10"> Filename</div><div class="col-toggle-item"><input type="checkbox" checked data-col="11"> Extension</div><div class="col-toggle-item"><input type="checkbox" checked data-col="12"> HTTP Version</div><div class="col-toggle-item"><input type="checkbox" checked data-col="13"> Status</div><div class="col-toggle-item"><input type="checkbox" checked data-col="14"> Substatus</div><div class="col-toggle-item"><input type="checkbox" checked data-col="15"> Win32 Status</div><div class="col-toggle-item"><input type="checkbox" checked data-col="16"> Time Taken</div><div class="col-toggle-item"><input type="checkbox" checked data-col="17"> Response Bytes</div><div class="col-toggle-item"><input type="checkbox" checked data-col="18"> Referrer</div><div class="col-toggle-item"><input type="checkbox" checked data-col="19"> User-Agent</div><div class="col-toggle-item"><input type="checkbox" checked data-col="20"> Threat Tag</div><div class="col-toggle-item"><input type="checkbox" checked data-col="21"> Source File</div><div class="col-toggle-item"><input type="checkbox" checked data-col="22"> Raw Logs</div></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="mainLogTable">
+        <thead><tr><th class="sortable" onclick="sortTable('timestamp')" style="width:150px;">Timestamp<div class="resizer"></div></th><th class="sortable" onclick="sortTable('hostname')" style="width:130px;">Hostname / Source<div class="resizer"></div></th><th class="sortable" onclick="sortTable('serverIP')" style="width:120px;">Server IP<div class="resizer"></div></th><th class="sortable" onclick="sortTable('serverPort')" style="width:80px;">Server Port<div class="resizer"></div></th><th class="sortable" onclick="sortTable('clientIP')" style="width:110px;">Client IP<div class="resizer"></div></th><th class="sortable" onclick="sortTable('username')" style="width:100px;">Username<div class="resizer"></div></th><th class="sortable" onclick="sortTable('virtualHost')" style="width:130px;">Virtual Host<div class="resizer"></div></th><th class="sortable" onclick="sortTable('method')" style="width:70px;">Method<div class="resizer"></div></th><th class="sortable" onclick="sortTable('uri')" style="width:210px;">Request URI<div class="resizer"></div></th><th class="sortable" onclick="sortTable('query')" style="width:180px;">Query String<div class="resizer"></div></th><th class="sortable" onclick="sortTable('filename')" style="width:150px;">Filename<div class="resizer"></div></th><th class="sortable" onclick="sortTable('fileExtension')" style="width:90px;">Extension<div class="resizer"></div></th><th class="sortable" onclick="sortTable('httpVersion')" style="width:90px;">HTTP Version<div class="resizer"></div></th><th class="sortable" onclick="sortTable('status')" style="width:70px;">Status<div class="resizer"></div></th><th class="sortable" onclick="sortTable('substatus')" style="width:80px;">Substatus<div class="resizer"></div></th><th class="sortable" onclick="sortTable('win32Status')" style="width:100px;">Win32 Status<div class="resizer"></div></th><th class="sortable" onclick="sortTable('timeTaken')" style="width:90px;">Time Taken<div class="resizer"></div></th><th class="sortable" onclick="sortTable('responseBytes')" style="width:100px;">Response Bytes<div class="resizer"></div></th><th class="sortable" onclick="sortTable('referrer')" style="width:220px;">Referrer<div class="resizer"></div></th><th class="sortable" onclick="sortTable('userAgent')" style="width:220px;">User-Agent<div class="resizer"></div></th><th class="sortable" onclick="sortTable('category')" style="width:140px;">Threat Tag<div class="resizer"></div></th><th class="sortable" onclick="sortTable('sourceFile')" style="width:130px;">Source File<div class="resizer"></div></th><th class="sortable" onclick="sortTable('raw')" style="width:260px;">Raw Logs<div class="resizer"></div></th></tr></thead>
+        <tbody id="logTableBody">
+          <tr>
+            <td colspan="23" style="text-align: center; padding: 32px; color: var(--text-muted);">
+              No forensic log entries loaded. Upload Nginx, Apache, IIS, or SIEM access logs to process.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="table-footer">
+      <button id="btnPrevPage" class="btn" disabled>Previous</button>
+      <span id="paginationText" style="color: var(--text-muted); font-family: monospace;">Page 1 of 1</span>
+      <button id="btnNextPage" class="btn" disabled>Next</button>
+    </div>
+  </section>
+
+  
+
+  <!-- Side Inspector Drawer Matching Screenshot Design -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()">
+    <div class="right-drawer" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <span style="font-weight: bold; color: white;">Log Inspection Details</span>
+        <button class="btn" onclick="closeDrawer()">✕</button>
+      </div>
+      <div class="drawer-body">
+        
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: bold;">Raw Log Payload</label>
+            <button class="btn" style="padding: 2px 8px; font-size: 10px;" onclick="copyRawPayload()">Copy Raw Log</button>
+          </div>
+          <pre class="raw-payload" id="drawerRawPayload"></pre>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <div class="meta-box">
+            <label>Client IP Address</label>
+            <span id="drawerClientIp" style="font-size: 12px; color: white; font-weight: bold;">-</span>
+          </div>
+          <div class="meta-box">
+            <label>Timestamp</label>
+            <span id="drawerTimestamp" style="font-size: 12px; color: white; font-weight: bold;">-</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <div class="meta-box">
+            <label>HTTP Request</label>
+            <span id="drawerMethodStatus" style="font-size: 12px; color: white; font-weight: bold;">-</span>
+          </div>
+          <div class="meta-box">
+            <label>Threat Severity</label>
+            <span id="drawerSeverity" style="font-size: 12px; font-weight: bold;">-</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; display: block;">Request URI Path</label>
+          <div style="background: #04060a; border: 1px solid var(--card-border); border-radius: 6px; padding: 8px; font-family: monospace; color: var(--accent-cyan); font-weight: bold; word-break: break-all;" id="drawerUri"></div>
+        </div>
+
+        <div>
+          <label style="color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; display: block;">User-Agent Header</label>
+          <div style="background: #04060a; border: 1px solid var(--card-border); border-radius: 6px; padding: 8px; font-family: monospace; color: var(--text-muted); word-break: break-all; font-size: 10px;" id="drawerUserAgent"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+          <div class="meta-box"><label>Referrer</label><span id="drawerReferrer" style="font-size:11px;color:white;word-break:break-all;">-</span></div>
+          <div class="meta-box"><label>Response Bytes</label><span id="drawerResponseBytes" style="font-size:11px;color:white;">-</span></div>
+          <div class="meta-box"><label>HTTP Version</label><span id="drawerHttpVersion" style="font-size:11px;color:white;">-</span></div>
+          <div class="meta-box"><label>Parser / Source</label><span id="drawerParserSource" style="font-size:11px;color:white;word-break:break-all;">-</span></div>
+        </div>
+
+        <div>
+          <label style="color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 6px; display: block;">Instant Filter & Exclusion Actions</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" onclick="instantFilterIP()">Filter IP</button>
+            <button class="btn btn-danger" onclick="instantExcludeIP()">Exclude IP</button>
+            <button class="btn btn-danger" onclick="instantExcludeStatus()">Exclude Status Code</button>
+            <button class="btn btn-danger" onclick="instantExcludePath()">Exclude Path</button>
+          </div>
+        </div>
+
+        <div class="playbook-box">
+          <div style="font-weight: bold; color: var(--accent-rose); font-size: 11px; margin-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between;">
+            <span id="drawerPlaybookHeader">⚠️ IR Playbook Active Threat: Clean</span>
+            <span style="color: var(--text-muted); font-size: 9px; font-weight: normal;">Automatic Remediation Steps</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <div style="background: #070a12; padding: 8px; border-radius: 6px; border: 1px solid var(--card-border);">
+              <div style="color: var(--accent-cyan); font-weight: bold; font-size: 10px; text-transform: uppercase; margin-bottom: 4px;">🔍 How to Investigate</div>
+              <div id="drawerInvestigateText" style="font-size: 11px; color: #d1d5db; line-height: 1.4;"></div>
+            </div>
+            <div style="background: #070a12; padding: 8px; border-radius: 6px; border: 1px solid var(--card-border);">
+              <div style="color: var(--accent-emerald); font-weight: bold; font-size: 10px; text-transform: uppercase; margin-bottom: 4px;">🛡️ Remediation Steps</div>
+              <div id="drawerRemediationText" style="font-size: 11px; color: #d1d5db; line-height: 1.4;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialogs for Debug and About -->
+  <div class="modal-overlay" id="debugModal" onclick="closeModals()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">⏱ Engine Debug Log</span>
+        <button class="btn" onclick="closeModals()">✕</button>
+      </div>
+      <div style="font-family: monospace; font-size: 11px; color: #818cf8; background: #04060a; padding: 10px; border-radius: 6px; max-height: 250px; overflow-y: auto;" id="debugLogContent">
+        System initialized successfully in air-gapped environment. Waiting for log ingestion...
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="aboutModal" onclick="closeModals()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title">ℹ️ About WebTrace</span>
+        <button class="btn" onclick="closeModals()">✕</button>
+      </div>
+      <div style="font-size: 11px; color: var(--text-main); line-height: 1.5; display: flex; flex-direction: column; gap: 8px;">
+        <p><strong>WebTrace v1.0.0 — Initial Public Release</strong></p>
+        <p>Designed for Digital Forensics and Incident Response (DFIR) investigations. Allows rapid regex scanning, IOC detection, IP filtering/exclusions, and multi-format log analysis entirely offline.</p>
+        <p style="color: var(--text-muted);">Security Classification: Internal Use Only</p>
+        <p style="color: var(--text-muted);">Author: Arslan Sabir</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Notification</div>
+
+  
+
+  <script>
+
+
+    // State Management
+    let parsedLogs = [];
+    let filteredLogs = [];
+    let currentPage = 1;
+    let pageSize = 50;
+    let kpiQuickFilter = 'all';
+    let activeIpTypeFilter = 'ALL';
+    let currentSort = { column: 'timestamp', asc: false };
+    let debugLogsList = [];
+    let currentSelectedLog = null;
+
+    function logDebug(msg) {
+      const timestamp = '';
+      debugLogsList.push(`[${timestamp}] ${msg}`);
+      const dbgContainer = document.getElementById('debugLogContent');
+      if (dbgContainer) {
+        dbgContainer.textContent = debugLogsList.join('\n');
+      }
+    }
+
+    let iisHeaderFields = null;
+
+    function sanitizeForTeams(str) {
+      if (typeof str !== 'string') return str;
+      return str.replace(/\0/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    }
+
+    function escapeCSVField(val) {
+      if (val === null || val === undefined) return '""';
+      const cleanVal = sanitizeForTeams(String(val));
+      return `"${cleanVal.replace(/"/g, '""')}"`;
+    }
+
+    /**
+     * CRITICAL: escapes text before it is injected into innerHTML. Without this,
+     * a log line that actually contains an XSS/SQLi payload (exactly what this
+     * tool is built to detect) gets rendered as live HTML/broken markup instead
+     * of text, which is what breaks the table layout.
+     */
+    function escapeHtml(val) {
+      if (val === null || val === undefined) return '';
+      return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function syncViewportLayout() {
+      const root = document.documentElement;
+      const vv = window.visualViewport;
+      const w = vv ? vv.width : window.innerWidth;
+      const h = vv ? vv.height : window.innerHeight;
+      root.style.setProperty('--viewport-w', `${w}px`);
+      root.style.setProperty('--viewport-h', `${h}px`);
+      root.style.setProperty('--viewport-ratio', `${w / Math.max(h,1)}`);
+    }
+    window.addEventListener('resize', syncViewportLayout, {passive:true});
+    window.addEventListener('orientationchange', () => setTimeout(syncViewportLayout, 50), {passive:true});
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', syncViewportLayout, {passive:true});
+    syncViewportLayout();
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function isPrivateIP(ip) {
+      if (!ip) return false;
+      let clean = String(ip).trim().toLowerCase();
+      if (!clean || clean === '-' || clean === 'unknown' || clean === 'localhost') return false;
+      // IPv4-mapped IPv6 (e.g. ::ffff:192.168.1.10)
+      const mapped = clean.match(/::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+      if (mapped) clean = mapped[1];
+      if (clean === '127.0.0.1' || clean === '0.0.0.0' || clean === '::1' || clean === '::') return true;
+      if (/^(10\.|192\.168\.|169\.254\.)/.test(clean)) return true;
+      const parts = clean.split('.');
+      if (parts.length === 4 && parts.every(x => /^\d+$/.test(x) && Number(x) >= 0 && Number(x) <= 255)) {
+        const a=Number(parts[0]), b=Number(parts[1]);
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 100 && b >= 64 && b <= 127) return true; // RFC 6598 CGNAT
+        return false;
+      }
+      // IPv6 ULA (fc00::/7), link-local (fe80::/10), and loopback.
+      if (/^f[cd][0-9a-f]{2}:/i.test(clean) || /^fe[89ab][0-9a-f]:/i.test(clean)) return true;
+      return false;
+    }
+
+    function normalizeURI(rawUri) {
+      try {
+        let decoded = rawUri;
+        for (let i = 0; i < 2; i++) {
+          if (decoded.includes('%')) decoded = decodeURIComponent(decoded);
+        }
+        return decoded.toLowerCase();
+      } catch (e) {
+        return rawUri.toLowerCase();
+      }
+    }
+
+    // Threat Vector Rule Set
+
+    function parseTimestampMs(raw) {
+      if (!raw) return NaN;
+      const months = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+
+      let d = new Date(raw);
+      if (!isNaN(d.getTime())) return d.getTime();
+
+      let m = raw.match(/(\d{2})\/([A-Za-z]{3})\/(\d{4}):(\d{2}):(\d{2}):(\d{2})\s*([+-]\d{4})?/);
+      if (m && months[m[2]] !== undefined) {
+        let t = Date.UTC(+m[3], months[m[2]], +m[1], +m[4], +m[5], +m[6]);
+        if (m[7]) {
+          const sign = m[7][0] === '-' ? -1 : 1;
+          const offMin = parseInt(m[7].slice(1, 3), 10) * 60 + parseInt(m[7].slice(3, 5), 10);
+          t -= sign * offMin * 60000;
+        }
+        if (!isNaN(t)) return t;
+      }
+
+      m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+      if (m) {
+        const t = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+        if (!isNaN(t)) return t;
+      }
+
+      m = raw.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})/);
+      if (m && months[m[1]] !== undefined) {
+        const t = Date.UTC(new Date().getFullYear(), months[m[1]], +m[2], +m[3], +m[4], +m[5]);
+        if (!isNaN(t)) return t;
+      }
+
+      return NaN;
+    }
+
+    // Normalize to one display format while preserving the source's local clock/offset.
+    // Example: 22/Dec/2016:16:30:52 +0300 -> 2016-12-22 16:30:52 +03:00
+    // No milliseconds are shown; raw evidence is preserved unchanged.
+    function setPipelineStage(id, detail='') {
+      const ids=['stageParse','stageNormalize','stageDetect','stageCorrelate','stageInvestigate','stageOutput'];
+      if (typeof logDebug === 'function') logDebug(`[PIPELINE] ${id.replace('stage','')} — ${detail || 'Running'}`);
+      const idx=ids.indexOf(id);
+      ids.forEach((stage,i)=>{
+        const el=document.getElementById(stage); if(!el) return;
+        el.classList.toggle('active', i===idx); el.classList.toggle('done', i<idx);
+        const span=el.querySelector('span'); if(span) span.textContent = i<idx ? 'Complete' : (i===idx ? (detail||'Running') : 'Waiting');
+      });
+    }
+
+    function normalizeTimestamp(raw) {
+      if (!raw) return 'Unknown';
+      const value = String(raw).trim();
+      let m = value.match(/^(\d{2})\/([A-Za-z]{3})\/(\d{4}):(\d{2}):(\d{2}):(\d{2})\s*([+-])(\d{2})(?::?(\d{2}))?$/);
+      const months = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+      const pad=n=>String(n).padStart(2,'0');
+      if (m && months[m[2]]) return `${m[3]}-${pad(months[m[2]])}-${m[1]} ${m[4]}:${m[5]}:${m[6]} ${m[7]}${m[8]}:${m[9]||'00'}`;
+      m = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:\s*(Z|[+-]\d{2}:?\d{2}))?$/);
+      if (m) {
+        let suffix = m[8] || '';
+        if (/^[+-]\d{4}$/.test(suffix)) suffix = suffix.slice(0,3)+':'+suffix.slice(3);
+        return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}${suffix ? ' '+suffix : ''}`;
+      }
+      m = value.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+      if (m && months[m[1]]) return `${new Date().getFullYear()}-${pad(months[m[1]])}-${pad(m[2])} ${m[3]}:${m[4]}:${m[5]}`;
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        const y=d.getFullYear(), mo=pad(d.getMonth()+1), da=pad(d.getDate());
+        return `${y}-${mo}-${da} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+      return 'Unknown';
+    }
+
+    function extractFilenameInfo(uri, query, referrer) {
+      const candidates = [String(uri || ''), String(query || ''), String(referrer || '')];
+      let filename = '';
+      let extension = '';
+      for (const raw of candidates) {
+        const decoded = raw.replace(/&(?:amp;)?/gi,'&').replace(/%2F/gi,'/').replace(/%5C/gi,'\\');
+        const parts = decoded.split(/[?#&]/)[0].split(/[\\/]/).filter(Boolean);
+        for (let i=parts.length-1;i>=0;i--) {
+          const part = decodeURIComponent(parts[i] || '').trim();
+          if (!part || /^\.+$/.test(part)) continue;
+          if (/^[^\s<>:"|]+\.[A-Za-z0-9]{1,12}$/.test(part)) {
+            filename = part;
+            extension = part.split('.').pop().toLowerCase();
+            return {filename, extension};
+          }
+        }
+      }
+      return {filename:'', extension:''};
+    }
+
+    function isSuspiciousUserAgent(ua) {
+      const value = String(ua || '').toLowerCase();
+      if (!value || value === 'unknown' || value === '-') return false;
+      return /(?:sqlmap|nikto|nmap|masscan|zgrab|gobuster|dirbuster|dirsearch|ffuf|feroxbuster|wfuzz|w3af|acunetix|nessus|openvas|nuclei|wpscan|burpsuite|havij|whatweb|httpx|python-requests|go-http-client|libwww-perl|curl\/|wget\/)/i.test(value);
+    }
+
+    function isUploadRequest(log) {
+      const method = String(log.method || '').toUpperCase();
+      const target = `${log.uri || ''} ${log.query || ''}`.toLowerCase();
+      const uploadPath = /(?:upload|uploads|fileupload|file-upload|attachment|attachments|import|media|document|documents|avatar|profile|image|images|multipart|transfer|sendfile|putfile|uploadfile)/i.test(target);
+      return ['POST','PUT','PATCH'].includes(method) && uploadPath;
+    }
+
+    function responseSizeBytes(value) {
+      const n = Number(String(value || '').replace(/,/g,''));
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    }
+
+    function statusExfiltrationIndicator(log) {
+      const status = Number(log.status);
+      const bytes = responseSizeBytes(log.responseBytes);
+      const method = String(log.method || '').toUpperCase();
+      const target = `${log.uri || ''} ${log.query || ''}`.toLowerCase();
+      const downloadable = /\.(?:zip|7z|rar|tar|gz|tgz|bz2|sql|csv|xlsx?|docx?|pdf|json|xml|bak|dump|db|sqlite)(?:$|[?#&])/i.test(target) || /(?:download|export|backup|report|archive|dump|attachment)/i.test(target);
+      /* Indicator only: a successful large response is not proof of exfiltration.
+         It becomes higher confidence when paired with a public source and a
+         download/export/archive style target. */
+      const publicSource = log.ipType === 'PUBLIC' || (!log.ipType && !isPrivateIP(log.clientIP));
+      return publicSource && (status === 200 || status === 206) && bytes >= 5 * 1024 * 1024 && downloadable && method === 'GET';
+    }
+
+    function normalizeEvent(log) {
+      if (!log) return log;
+      log.timestamp = normalizeTimestamp(log.timestamp);
+      log.method = String(log.method || 'UNKNOWN').toUpperCase();
+      log.uri = String(log.uri || '/');
+      log.status = Number.isFinite(Number(log.status)) ? Number(log.status) : 0;
+      log.userAgent = (log.userAgent && log.userAgent !== '-') ? String(log.userAgent) : 'Unknown';
+      log.referrer = (log.referrer && log.referrer !== '-') ? String(log.referrer) : '-';
+      log.responseBytes = log.responseBytes === undefined || log.responseBytes === '-' ? '-' : String(log.responseBytes);
+      log.httpVersion = log.httpVersion || '';
+      log.query = log.query || '';
+      log.username = log.username || log.remoteUser || '-';
+      log.serverIP = log.serverIP || '';
+      log.serverPort = log.serverPort || '';
+      log.substatus = log.substatus || '';
+      log.win32Status = log.win32Status || '';
+      log.timeTaken = log.timeTaken || '';
+      log.virtualHost = log.virtualHost || '';
+      log.protocol = log.httpVersion || log.protocol || '';
+      log.ipType = isPrivateIP(log.clientIP) ? 'PRIVATE' : 'PUBLIC';
+      const fileInfo = extractFilenameInfo(log.uri, log.query, log.referrer);
+      log.filename = log.filename || fileInfo.filename || '-';
+      log.fileExtension = log.fileExtension || fileInfo.extension || '-';
+      log.uploadIndicator = !!log.uploadIndicator;
+      log.normalized = true;
+      return log;
+    }
+
+    function splitPatterns(value) {
+      return String(value || '').split(/[\n,]+/).map(v => v.trim()).filter(Boolean);
+    }
+
+    function matchesPatternList(value, patternList) {
+      const text = String(value || '').toLowerCase();
+      return splitPatterns(patternList).some(pattern => {
+        const p = pattern.toLowerCase();
+        if (p.length >= 2 && p.startsWith('/') && p.endsWith('/')) {
+          try { return new RegExp(p.slice(1, -1), 'i').test(String(value || '')); } catch (e) { return text.includes(p); }
+        }
+        return text.includes(p);
+      });
+    }
+
+    function applyBehaviorTag(log, category, severity, playbook) {
+      // Only overwrite if strictly more severe, or the log was previously Clean —
+      // same "highest severity wins" rule as the main rule engine below.
+      if (log.isThreat && severityRank[severity] <= severityRank[log.severity]) return;
+      log.isThreat = true;
+      log.category = category;
+      log.severity = severity;
+      log.playbook = playbook;
+    }
+
+    function flagSlidingWindow(sortedLogs, predicate, windowMs, threshold, category, severity, playbook) {
+      const matches = sortedLogs.filter(predicate);
+      let left = 0;
+      for (let right = 0; right < matches.length; right++) {
+        while (matches[right]._ts - matches[left]._ts > windowMs) left++;
+        if (right - left + 1 >= threshold) {
+          applyBehaviorTag(matches[right], category, severity, playbook);
+        }
+      }
+    }
+
+
+
+
+/* ===== v4.4.2 backend merged into v4.0 frontend ===== */
+
+    const customVectorRules = [
+      { category: "Custom Internal Policy Violation", severity: "HIGH", patterns: [/secret_admin_override/i, /debug_mode=true/i, /exec_admin/i], playbook: "Audit administrative session tokens and revoke unauthorized access privileges immediately." },
+      { category: "Custom Web Shell / Backdoor", severity: "CRITICAL", patterns: [/pwned\.php/i, /eval\(gzinflate/i, /shell_dump/i], playbook: "Quarantine the web application server and inspect filesystem modifications." }
+    ];
+
+    const vectorRules = [
+      { category: "RCE / Command Injection", severity: "CRITICAL", patterns: [/;\s*(?:cat|ls|dir|id|whoami|curl|wget|powershell|cmd|bash|nc|netcat|python|perl|ruby)\b/i, /\$\(.*\)/, /`[^`]+`/, /(?:system|exec|passthru|shell_exec)\s*\(/i], playbook: "Validate process creation and outbound connections from the web service account; isolate the host if execution is confirmed." },
+      { category: "Web Shell Activity", severity: "CRITICAL", patterns: [/(?:c99|r57|wso|b374k|cmd\.php|shell\.php|mini\.php|uploader\.php|alfa\.php)(?:[/?]|$)/i, /eval\(base64_decode/i], playbook: "Inspect the referenced web path and filesystem for unauthorized script creation or modification." },
+      { category: "SQL Injection (SQLi)", severity: "HIGH", patterns: [/(?:union(?:%20|\s)+select|information_schema|(?:or|and)(?:%20|\s)+[0-9'\"]+(?:=|%3d)[0-9'\"]+)/i, /(?:%27|'|%22|")\s*(?:or|and)\s*(?:%27|'|%22|")?\s*\d+\s*=\s*\d+/i, /(?:drop|truncate)\s+(?:table|database)\b/i, /(?:insert|update)\s+.+\s+(?:into|set)\b/i], playbook: "Validate the request parameter and correlate with application/database logs before escalation." },
+      { category: "Path Traversal / LFI", severity: "HIGH", patterns: [/(?:\.\.\/|\.\.\\|%2e%2e(?:%2f|\/)|%252e%252e|%2fetc%2f(?:passwd|shadow)|\/etc\/(?:passwd|shadow)|c:\\\windows\\win\.ini)/i], playbook: "Confirm whether the application attempted local file access and block traversal at the application/WAF layer." },
+      { category: "File Inclusion Wrapper", severity: "HIGH", patterns: [/(?:php|data|expect|zip|phar):\/\//i], playbook: "Review the affected parameter and application file-inclusion controls; confirm whether a local/remote resource was actually loaded." },
+      { category: "Server-Side Request Forgery (SSRF)", severity: "HIGH", patterns: [/(?:169\.254\.169\.254|metadata\.google\.internal|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|file:\/\/|dict:\/\/|gopher:\/\/)/i], playbook: "Validate the destination and correlate with server-side outbound network telemetry; restrict metadata/internal destinations where appropriate." },
+      { category: "Cross-Site Scripting (XSS)", severity: "MEDIUM", patterns: [/(?:<script(?:\s|>)|javascript%3a|javascript:|(?:^|[&?])on(?:load|error|click)%3d|document(?:%2e|\.)cookie|<img[^>]+onerror\s*=)/i], playbook: "Validate the parameter context and response behavior; review output encoding and CSP controls." },
+      { category: "Log4Shell / JNDI Injection", severity: "CRITICAL", patterns: [/\$\{(?:jndi|\${lower:jndi}):(?:ldap|ldaps|rmi|dns|http|https|iiop|corba):\/\//i, /%24%7b(?:jndi|%24%7blower%3ajndi)(?:%7d|\})%3a/i], playbook: "Correlate with Java process and outbound LDAP/RMI/DNS telemetry and verify Log4j exposure." },
+      { category: "Sensitive File / Config Exposure Probe", severity: "MEDIUM", patterns: [/(?:\/\.git\/(?:config|HEAD)|\/\.env(?:\b|$)|\/\.svn\/|wp-config\.php\.(?:bak|old|save)|\/\.ssh\/|\/\.aws\/credentials|\.sql\.(?:gz|bak)$|\/\.DS_Store)/i], playbook: "Confirm whether the resource exists and was served; block sensitive-file exposure and rotate credentials if disclosure occurred." },
+      { category: "XXE / XML Entity Injection", severity: "HIGH", patterns: [/(?:<!doctype[^>]+(?:system|public)|<!entity[^>]+(?:system|public)|%25?ENTITY|%3c!doctype)/i], playbook: "Review XML parser configuration and disable external entity processing; correlate with server-side file/network access." },
+      { category: "Server-Side Template Injection (SSTI)", severity: "HIGH", patterns: [/(?:\{\{[^}]{1,80}\}\}|\$\{[^}]{1,80}\}|<%=?[^%]{1,80}%>)/i], playbook: "Validate whether the parameter reaches a server-side template engine and review template escaping/sandboxing." },
+      { category: "HTTP Request Smuggling / CRLF Probe", severity: "MEDIUM", patterns: [/(?:%0d%0a|%0a%0d|\r\n(?:transfer-encoding|content-length)\s*:|transfer-encoding[^&]{0,40}chunked[^&]{0,40}transfer-encoding)/i], playbook: "Review proxy/origin parsing consistency and normalize duplicate or conflicting HTTP framing headers." },
+      { category: "Automated Recon Scanner", severity: "LOW", patterns: [/(?:nikto|sqlmap|nmap|masscan|zgrab|gobuster|dirbuster|w3af|acunetix|nessus)/i], playbook: "Validate scanner activity against approved testing and monitoring windows before blocking or escalating." }
+    ];
+    const severityRank = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'NONE': 0 };
+
+    // Behavioral thresholds. Burst detections are evaluated within a rolling time
+    // window per source IP, not across the whole dataset — 5 failed logins from
+    // one IP spread across weeks of logs is NOT brute forcing.
+    const BRUTE_FORCE_WINDOW_MS = 5 * 60 * 1000;   // 5 minutes
+    const BRUTE_FORCE_THRESHOLD = 5;
+    const FORBIDDEN_PROBE_WINDOW_MS = 5 * 60 * 1000;
+    const FORBIDDEN_PROBE_THRESHOLD = 5;
+    const RECON_404_WINDOW_MS = 5 * 60 * 1000;
+    const RECON_404_THRESHOLD = 8;
+
+    /**
+     * Best-effort conversion of the several timestamp shapes this parser produces
+     * into epoch milliseconds. Used both for real time-window correlation in the
+     * behavioral rules below AND to make the "Timestamp" column sort correctly
+     * across mixed log formats (a plain string sort mis-orders Apache vs IIS vs
+     * ISO timestamps relative to each other). Returns NaN if unparseable.
+     */
+
+
+
+/* ===== v4.4.2 backend merged into v4.0 frontend ===== */
+
+    function parseLogLine(line, filename = 'Unknown') {
+      if (!line || !line.trim()) return null;
+      let safeLine = sanitizeForTeams(line.trim());
+      if (safeLine.startsWith('#')) {
+        if (safeLine.toLowerCase().startsWith('#fields:')) iisHeaderFields = safeLine.substring(8).trim().split(/\s+/).map(f=>f.toLowerCase());
+        return null;
+      }
+      // Some datasets wrap the complete Apache line in one outer pair of quotes.
+      if (safeLine.startsWith('"') && safeLine.endsWith('"') && safeLine.indexOf('"',1) !== safeLine.length-1) safeLine=safeLine.slice(1,-1);
+      let hostname=filename, clientIP='127.0.0.1', timestamp='', method='GET', uri='/', status=200, userAgent='Unknown';
+      let referrer='-', responseBytes='-', httpVersion='', query='', username='-', serverIP='', serverPort='', substatus='', win32Status='', timeTaken='', virtualHost='';
+      const base = { raw:safeLine, hostname, clientIP, timestamp, method, uri, status, userAgent, referrer, responseBytes, httpVersion, query, username, serverIP, serverPort, substatus, win32Status, timeTaken, virtualHost, filename:'-', fileExtension:'-', uploadIndicator:false, isThreat:false, category:'Clean', severity:'NONE', playbook:'', formatOk:false };
+
+      // JSON
+      if (safeLine.startsWith('{') && safeLine.endsWith('}')) {
+        try {
+          const o=JSON.parse(safeLine);
+          const pick=(keys)=>{for(const k of keys){if(o[k]!==undefined&&o[k]!==null&&String(o[k])!=='')return o[k];}return null;};
+          hostname=String(pick(['hostname','host','computername','server_name','source_host'])||filename);
+          clientIP=String(pick(['client_ip','clientip','remote_addr','remote_ip','c-ip','ip','clientIP','source_ip'])||clientIP);
+          timestamp=String(pick(['timestamp','@timestamp','time','datetime','date','time_local'])||'');
+          const req=String(pick(['request','http_request'])||'');
+          method=String(pick(['method','http_method','request_method','verb'])||'GET').toUpperCase();
+          uri=String(pick(['uri','url','path','request_uri','request_path','endpoint'])||'/');
+          if(req){const rm=req.match(/^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+([^\s]+)(?:\s+(HTTP\/[^\s]+))?/i);if(rm){method=rm[1].toUpperCase();uri=rm[2];httpVersion=rm[3]||'';}}
+          const sm=pick(['status','status_code','response_code','code','http_status']); status=sm!==null?parseInt(sm,10)||0:200;
+          userAgent=String(pick(['user_agent','useragent','http_user_agent','agent','userAgent'])||'Unknown');
+          referrer=String(pick(['referrer','referer','http_referer'])||'-');
+          responseBytes=String(pick(['bytes','body_bytes_sent','response_bytes','content_length','sc_bytes'])||'-');
+          username=String(pick(['username','user','remote_user','cs_username'])||'-');
+          serverIP=String(pick(['server_ip','serverip','s_ip','local_ip'])||'');
+          serverPort=String(pick(['server_port','port','s_port'])||'');
+          virtualHost=String(pick(['virtual_host','vhost','host_header'])||hostname);
+          query=uri.includes('?')?uri.split('?').slice(1).join('?'):String(pick(['query','query_string'])||'');
+          return normalizeEvent({...base,hostname,clientIP,timestamp,method,uri,status,userAgent,referrer,responseBytes,httpVersion,query,username,serverIP,serverPort,virtualHost,formatOk:normalizeTimestamp(timestamp)!=='Unknown',parser:'JSON'});
+        } catch(e) {}
+      }
+
+      // Apache/Nginx combined access log (robustly captures referrer + UA).
+      const combined=/^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\s+([^\s"]+)(?:\s+(HTTP\/[^\s"]+))?"\s+(\d{3})\s+(\S+)(?:\s+"([^"]*)"\s+"([^"]*)")?/i.exec(safeLine);
+      if(combined){
+        clientIP=combined[1]; username=combined[3]; timestamp=combined[4]; method=combined[5].toUpperCase(); uri=combined[6]; httpVersion=combined[7]||''; status=parseInt(combined[8],10); responseBytes=combined[9]; referrer=combined[10]||'-'; userAgent=combined[11]||'Unknown';
+        query=uri.includes('?')?uri.split('?').slice(1).join('?'):'';
+        return normalizeEvent({...base,hostname,clientIP,timestamp,method,uri,status,userAgent,referrer,responseBytes,httpVersion,query,username,formatOk:true,parser:'Apache/Nginx Combined'});
+      }
+
+      // IIS W3C. Supports #Fields headers and the standard headerless field order.
+      if(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/.test(safeLine)){
+        const t=safeLine.split(/\s+/), verbs=['GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS'];
+        if(iisHeaderFields){
+          const gv=n=>{const i=iisHeaderFields.indexOf(n);return i>=0&&i<t.length?t[i]:null;};
+          clientIP=gv('c-ip')||t[2]||clientIP; serverIP=gv('s-ip')||''; serverPort=gv('s-port')||''; hostname=gv('s-computername')||gv('s-sitename')||filename; virtualHost=gv('cs-host')||hostname; timestamp=`${t[0]} ${t[1]}`; method=String(gv('cs-method')||'GET').toUpperCase(); const stem=gv('cs-uri-stem')||'/'; const q=gv('cs-uri-query'); uri=q&&q!=='-'?`${stem}?${q}`:stem; status=parseInt(gv('sc-status')||'0',10)||0; substatus=gv('sc-substatus')||''; win32Status=gv('sc-win32-status')||''; timeTaken=gv('time-taken')||''; userAgent=gv('cs(user-agent)')||gv('cs(User-Agent)')||gv('user-agent')||'Unknown'; referrer=gv('cs(Referer)')||gv('cs(referer)')||'-'; responseBytes=gv('sc-bytes')||gv('sc-bytes-sent')||'-'; httpVersion=gv('cs-version')||''; username=gv('cs-username')||'-'; query=q&&q!=='-'?q:'';
+          if(verbs.includes(method)) return normalizeEvent({...base,hostname,clientIP,timestamp,method,uri,status,userAgent,referrer,responseBytes,httpVersion,query,username,serverIP,serverPort,substatus,win32Status,timeTaken,virtualHost,formatOk:true,parser:'IIS W3C'});
+        } else if(t.length>=10 && verbs.includes(String(t[3]).toUpperCase()) && /^(?:\d{1,3}\.){3}\d{1,3}$/.test(t[8]) && /^[1-5]\d{2}$/.test(t[9])){
+          timestamp=`${t[0]} ${t[1]}`; method=t[3].toUpperCase(); uri=t[4]||'/'; if(t[5]&&t[5]!=='-')uri+=`?${t[5]}`; clientIP=t[8]; status=parseInt(t[9],10); query=t[5]&&t[5]!=='-'?t[5]:'';
+          // Headerless W3C positions after sc-status: sc-substatus, sc-win32-status, time-taken; UA is not guaranteed.
+          return normalizeEvent({...base,hostname,clientIP,timestamp,method,uri,status,userAgent:'Unknown',referrer:'-',responseBytes:'-',httpVersion:'',query,formatOk:true,parser:'IIS W3C Headerless'});
+        }
+      }
+
+      // Generic HTTP fallback. Prefer the last quoted field as UA only when it is not a request/referrer.
+      const ipMatch=safeLine.match(/\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b|(?:[A-Fa-f0-9]{1,4}:){2,7}[A-Fa-f0-9]{1,4}/);
+      if(ipMatch)clientIP=ipMatch[0];
+      const req=safeLine.match(/"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\s+([^\s"]+)(?:\s+(HTTP\/[^\s"]+))?"/i);
+      if(req){method=req[1].toUpperCase();uri=req[2];httpVersion=req[3]||'';}
+      const sm=safeLine.match(/"\s+(\d{3})\s+/)||safeLine.match(/\s(\d{3})\s+(?:\d+|-)\s+/); if(sm)status=parseInt(sm[1],10);
+      const bt=safeLine.match(/\[([^\]]+)\]/); if(bt)timestamp=bt[1]; else {const it=safeLine.match(/\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b/);if(it)timestamp=it[0];}
+      const qs=[...safeLine.matchAll(/"([^"]*)"/g)].map(m=>m[1]); if(qs.length>=2){const last=qs[qs.length-1], prev=qs[qs.length-2]; if(last&&last!=='-'&&!/^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b/i.test(last))userAgent=last; if(prev&&/^(?:https?|ftp):\/\//i.test(prev))referrer=prev;}
+      const bytesMatch=safeLine.match(/\"\s+\d{3}\s+(\d+|-)\s+\"/); if(bytesMatch) responseBytes=bytesMatch[1];
+      query=uri.includes('?')?uri.split('?').slice(1).join('?'):'';
+      return normalizeEvent({...base,hostname,clientIP,timestamp,method,uri,status,userAgent,referrer,responseBytes,httpVersion,query,username,formatOk:!!(ipMatch||req)&&normalizeTimestamp(timestamp)!=='Unknown',parser:'Generic HTTP'});
+    }
+
+    // UI Render Engine with Exclusions and Tabs
+
+
+
+/* ===== v4.4.2 backend merged into v4.0 frontend ===== */
+
+    function runThreatDetectionEngine(logs) {
+      if (!logs || !logs.length) return;
+      const activeRules = [...customVectorRules, ...vectorRules];
+
+      logs.forEach(log => {
+        log.isThreat = false;
+        log.category = 'Clean';
+        log.severity = 'NONE';
+        log.playbook = '';
+        log._ts = parseTimestampMs(log.timestamp);
+        log.indicators = [];
+
+        const fileInfo = extractFilenameInfo(log.uri, log.query, log.referrer);
+        log.filename = fileInfo.filename || log.filename || '-';
+        log.fileExtension = fileInfo.extension || log.fileExtension || '-';
+
+        if (isSuspiciousUserAgent(log.userAgent)) {
+          log.indicators.push('Suspicious User-Agent');
+          applyBehaviorTag(log, 'Suspicious User-Agent', 'LOW', 'User-Agent matches a known scanner, enumeration tool, scripting client, or automated HTTP client pattern. Validate whether the source is approved.');
+        }
+        if (log.ipType === 'PUBLIC' && isUploadRequest(log)) {
+          log.uploadIndicator = true;
+          log.indicators.push('Public IP Upload Activity');
+          applyBehaviorTag(log, 'Public IP Upload Activity', 'MEDIUM', 'POST/PUT/PATCH request from a public source targets an upload/import/attachment-style endpoint. Confirm whether the source and upload are authorized.');
+        }
+        if (statusExfiltrationIndicator(log)) {
+          log.indicators.push(`HTTP ${log.status} Large Download / Export`);
+          log.indicators.push('Potential Data Exfiltration');
+          applyBehaviorTag(log, 'Potential Data Exfiltration (HTTP 2xx)', 'HIGH', 'Successful HTTP response returned a large payload from a download/export/archive-style target. This is an indicator only; correlate with response size, destination, authentication, endpoint purpose, and network telemetry.');
+        }
+
+        const cleanUri = normalizeURI(`${log.uri || ''} ${log.query || ''}`);
+        const userAgent = (log.userAgent || '').toLowerCase();
+
+        // Evaluate ALL rules and keep the HIGHEST-severity match — previously this
+        // broke on the first array match, so a low-severity rule earlier in the
+        // list could silently mask a CRITICAL match later in the list.
+        for (let rule of activeRules) {
+          let matched = false;
+          for (let pat of rule.patterns) {
+            if (pat.test(cleanUri) || pat.test(userAgent)) {
+              matched = true;
+              break;
+            }
+          }
+          if (matched && severityRank[rule.severity] > severityRank[log.severity]) {
+            log.isThreat = true;
+            log.category = rule.category;
+            log.severity = rule.severity;
+            log.playbook = rule.playbook;
+          }
+        }
+      });
+
+      // Behavioral anomaly detection — grouped and time-windowed per source IP.
+      const byIp = {};
+      logs.forEach(log => {
+        const ip = log.clientIP || '0.0.0.0';
+        (byIp[ip] = byIp[ip] || []).push(log);
+      });
+
+      Object.values(byIp).forEach(ipLogs => {
+        const withTs = ipLogs.filter(l => !isNaN(l._ts)).sort((a, b) => a._ts - b._ts);
+        const withoutTs = ipLogs.filter(l => isNaN(l._ts));
+
+        // Brute force: repeated 401 (actual auth failures) within a short window.
+        // Kept separate from 403 (authorization failure, not a wrong-password
+        // attempt) — conflating the two flagged normal permission-denied traffic
+        // as HIGH-severity credential brute forcing.
+        flagSlidingWindow(withTs, l => l.status === 401, BRUTE_FORCE_WINDOW_MS, BRUTE_FORCE_THRESHOLD,
+          'Behavior: Brute Force Hammering (401s)', 'HIGH',
+          'Repeated authentication failures from this IP within a short window. Apply IP rate limiting/lockout and confirm the targeted account(s).');
+
+        flagSlidingWindow(withTs, l => l.status === 403, FORBIDDEN_PROBE_WINDOW_MS, FORBIDDEN_PROBE_THRESHOLD,
+          'Behavior: Repeated Access-Denied (403) Probing', 'MEDIUM',
+          'Repeated authorization failures from this IP in a short window. Review the specific endpoints targeted.');
+
+        flagSlidingWindow(withTs, l => l.status === 404, RECON_404_WINDOW_MS, RECON_404_THRESHOLD,
+          'Behavior: 404 Recon Storm', 'MEDIUM',
+          'High volume of 404 errors from this IP in a short window. Likely automated path/content discovery — block at the WAF/edge layer.');
+
+        // Entries with an unparseable timestamp fall back to a whole-dataset count
+        // for just those entries, so nothing is silently ignored.
+        if (withoutTs.length) {
+          const c401 = withoutTs.filter(l => l.status === 401);
+          const c403 = withoutTs.filter(l => l.status === 403);
+          const c404 = withoutTs.filter(l => l.status === 404);
+          if (c401.length >= BRUTE_FORCE_THRESHOLD) c401.forEach(l => applyBehaviorTag(l, 'Behavior: Brute Force Hammering (401s)', 'HIGH', 'Repeated auth failures from this IP (timestamp unparsed — counted dataset-wide). Apply IP rate limiting/lockout.'));
+          if (c403.length >= FORBIDDEN_PROBE_THRESHOLD) c403.forEach(l => applyBehaviorTag(l, 'Behavior: Repeated Access-Denied (403) Probing', 'MEDIUM', 'Repeated authorization failures from this IP (timestamp unparsed — counted dataset-wide). Review targeted endpoints.'));
+          if (c404.length >= RECON_404_THRESHOLD) c404.forEach(l => applyBehaviorTag(l, 'Behavior: 404 Recon Storm', 'MEDIUM', 'High volume of 404s from this IP (timestamp unparsed — counted dataset-wide). Block scanning tool at WAF level.'));
+        }
+      });
+
+      const threatCount = logs.filter(l => l.isThreat).length;
+      logDebug(`Threat detection engine completed for ${logs.length} logs — ${threatCount} flagged.`);
+    }
+
+
+
+
+/* ===== v4.4.2 backend merged into v4.0 frontend ===== */
+
+    function applyFiltersAndRender() {
+      const search = getInputValue('searchInput');
+      const ipSearch = getInputValue('ipAddressInput');
+      const hostSearch = getInputValue('hostnameInput');
+      const pathSearch = getInputValue('pathInput');
+      const uaSearch = getInputValue('userAgentInput');
+      const refSearch = getInputValue('referrerInput');
+      const sourceSearch = getInputValue('sourceInput');
+      const querySearch = getInputValue('queryInput');
+      const usernameSearch = getInputValue('usernameInput');
+      const httpVersionSearch = getInputValue('httpVersionInput');
+      const responseBytesSearch = getInputValue('responseBytesInput');
+      const cat = getInputValue('categoryFilter');
+      const method = getInputValue('methodFilter');
+      const stat = getInputValue('statusFilter');
+
+      const excludeIp = getInputValue('excludeIpInput');
+      const excludeHost = getInputValue('excludeHostnameInput');
+      const excludeStatus = getInputValue('excludeStatusInput');
+      const excludeMethod = getInputValue('excludeMethodInput');
+      const excludePath = getInputValue('excludePathInput');
+      const excludeUA = getInputValue('excludeUserAgentInput');
+      const excludeRef = getInputValue('excludeReferrerInput');
+      const excludeSourceEl = document.getElementById('excludeSourceInput');
+      const excludeSource = excludeSourceEl ? excludeSourceEl.value.trim() : '';
+      const excludeCategory = getInputValue('excludeCategoryInput');
+      const excludeSearch = getInputValue('excludeSearchInput');
+      const excludeQuery = getInputValue('excludeQueryInput');
+      const excludeUsername = getInputValue('excludeUsernameInput');
+      const excludeHttpVersion = getInputValue('excludeHttpVersionInput');
+      const excludeResponseBytes = getInputValue('excludeResponseBytesInput');
+
+      const statusMatches = (status, expression) => {
+        if (!expression) return true;
+        const value = String(status);
+        return splitPatterns(expression).some(p => {
+          const q=p.toLowerCase();
+          if (/^[1-5]xx$/.test(q)) return value.startsWith(q[0]);
+          return value === q;
+        });
+      };
+      const fieldMatches = (value, expression) => !expression || matchesPatternList(value, expression);
+
+      filteredLogs = parsedLogs.filter(log => {
+        if (kpiQuickFilter === 'threats' && !log.isThreat) return false;
+        if (kpiQuickFilter === 'clean' && log.isThreat) return false;
+        const detectedIpType = log.ipType || (isPrivateIP(log.clientIP) ? 'PRIVATE' : 'PUBLIC');
+        if (activeIpTypeFilter !== 'ALL' && detectedIpType !== activeIpTypeFilter) return false;
+
+        if (!fieldMatches(log.clientIP, ipSearch)) return false;
+        if (!fieldMatches(log.hostname, hostSearch)) return false;
+        if (!fieldMatches(log.uri, pathSearch)) return false;
+        if (!fieldMatches(log.userAgent, uaSearch)) return false;
+        if (!fieldMatches(log.referrer, refSearch)) return false;
+        if (!fieldMatches(log.sourceFile || '', sourceSearch)) return false;
+        if (!fieldMatches(log.query, querySearch)) return false;
+        if (!fieldMatches(log.username, usernameSearch)) return false;
+        if (!fieldMatches(log.httpVersion, httpVersionSearch)) return false;
+        if (!fieldMatches(log.responseBytes, responseBytesSearch)) return false;
+        if (!fieldMatches(log.category, cat)) return false;
+        if (!fieldMatches(log.method, method)) return false;
+        if (!statusMatches(log.status, stat)) return false;
+
+        if (search) {
+          const combined = `${log.hostname} ${log.clientIP} ${log.uri} ${log.query} ${log.filename || ''} ${log.fileExtension || ''} ${log.userAgent} ${log.referrer} ${log.method} ${log.status} ${log.category} ${log.sourceFile || ''} ${log.username || ''} ${log.httpVersion || ''} ${log.responseBytes || ''}`;
+          if (!matchesPatternList(combined, search)) return false;
+        }
+
+        if (excludeIp && matchesPatternList(log.clientIP, excludeIp)) return false;
+        if (excludeHost && matchesPatternList(log.hostname, excludeHost)) return false;
+        if (excludeStatus && !(!statusMatches(log.status, excludeStatus))) return false;
+        if (excludeMethod && matchesPatternList(log.method, excludeMethod)) return false;
+        if (excludePath && matchesPatternList(log.uri, excludePath)) return false;
+        if (excludeUA && matchesPatternList(log.userAgent, excludeUA)) return false;
+        if (excludeRef && matchesPatternList(log.referrer, excludeRef)) return false;
+        if (excludeSource && matchesPatternList(log.sourceFile || '', excludeSource)) return false;
+        if (excludeCategory && matchesPatternList(log.category, excludeCategory)) return false;
+        if (excludeQuery && matchesPatternList(log.query, excludeQuery)) return false;
+        if (excludeUsername && matchesPatternList(log.username, excludeUsername)) return false;
+        if (excludeHttpVersion && matchesPatternList(log.httpVersion, excludeHttpVersion)) return false;
+        if (excludeResponseBytes && matchesPatternList(log.responseBytes, excludeResponseBytes)) return false;
+        if (excludeSearch && matchesPatternList(`${log.hostname} ${log.clientIP} ${log.uri} ${log.query} ${log.filename || ''} ${log.fileExtension || ''} ${log.userAgent} ${log.referrer} ${log.method} ${log.status} ${log.category} ${log.sourceFile || ''}`, excludeSearch)) return false;
+        return true;
+      });
+
+      if (currentSort.column) {
+        const col = currentSort.column;
+        filteredLogs.sort((a,b)=>{
+          let valA,valB;
+          if(col==='timestamp'){
+            const tA=parseTimestampMs(a.timestamp),tB=parseTimestampMs(b.timestamp);
+            valA=isNaN(tA)?a.timestamp.toLowerCase():tA; valB=isNaN(tB)?b.timestamp.toLowerCase():tB;
+          } else { valA=a[col]; valB=b[col]; if(typeof valA==='string')valA=valA.toLowerCase(); if(typeof valB==='string')valB=valB.toLowerCase(); }
+          if(valA<valB)return currentSort.asc?-1:1; if(valA>valB)return currentSort.asc?1:-1; return 0;
+        });
+      }
+      updateKPIs(); renderDashboardSvgCharts(); renderTablePage();
+    }
+
+    function updateKPIs() {
+      const total = parsedLogs.length;
+      const threats = parsedLogs.filter(l => l.isThreat).length;
+      const clean = total - threats;
+      const uniqueIps = new Set(parsedLogs.map(l => l.clientIP)).size;
+
+      const kpiTotal = document.getElementById('kpiTotalRequests');
+      const kpiThreats = document.getElementById('kpiThreatsDetected');
+      const kpiClean = document.getElementById('kpiCleanTraffic');
+      const kpiUnique = document.getElementById('kpiUniqueIps');
+      if (kpiTotal) kpiTotal.textContent = total.toLocaleString();
+      if (kpiThreats) kpiThreats.textContent = threats.toLocaleString();
+      if (kpiClean) kpiClean.textContent = clean.toLocaleString();
+      if (kpiUnique) kpiUnique.textContent = uniqueIps.toLocaleString();
+      document.getElementById('engineStatusText').textContent = `ACTIVE (${total.toLocaleString()} LOGS)`;
+    }
+
+    function renderDashboardSvgCharts() {
+      const statusData = getCounts(filteredLogs, 'status', 5);
+      const threatData = getCounts(filteredLogs.filter(l => l.isThreat), 'category', 5);
+      renderSvgDonut('statusChartBox', statusData, ['#10b981', '#06b6d4', '#6366f1', '#f59e0b', '#f43f5e']);
+      renderSvgDonut('threatChartBox', threatData, ['#f43f5e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4']);
+      renderTopRequestedUris(filteredLogs);
+      renderTopSourceIps(filteredLogs);
+    }
+
+    function getCounts(logs, key, top = null) {
+      const counts = {};
+      logs.forEach(l => counts[l[key]] = (counts[l[key]] || 0) + 1);
+      let items = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      if (top) items = items.slice(0, top);
+      return items;
+    }
+
+    function renderSvgDonut(containerId, dataItems, colors) {
+      const box = document.getElementById(containerId);
+      if (!box) return;
+      if (!dataItems.length) {
+        box.innerHTML = `<span style="color:var(--text-muted);font-size:10px;">No Data</span>`;
+        return;
+      }
+      const total = dataItems.reduce((acc, curr) => acc + curr[1], 0);
+      let cumulativePercent = 0;
+      const slices = dataItems.map((item, idx) => {
+        const percent = item[1] / total;
+        const startX = Math.cos(2 * Math.PI * cumulativePercent);
+        const startY = Math.sin(2 * Math.PI * cumulativePercent);
+        cumulativePercent += percent;
+        const endX = Math.cos(2 * Math.PI * cumulativePercent);
+        const endY = Math.sin(2 * Math.PI * cumulativePercent);
+        const largeArcFlag = percent > 0.5 ? 1 : 0;
+        const pathData = `M ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} L 0 0`;
+        return `<path d="${pathData}" fill="${colors[idx % colors.length]}" />`;
+      }).join('');
+      const legend = dataItems.map((item, idx) => {
+        const pct = ((item[1] / total) * 100).toFixed(1);
+        return `<div class="legend-item">
+          <div class="legend-key"><div class="legend-color-dot" style="background:${colors[idx % colors.length]}"></div><span title="${escapeHtml(item[0])}">${escapeHtml(item[0])}</span></div>
+          <span style="font-weight:bold;white-space:nowrap;">${item[1]} <span style="color:#9ca3af;font-weight:500;">(${pct}%)</span></span>
+        </div>`;
+      }).join('');
+      box.innerHTML = `<div class="chart-container-split">
+        <div class="doughnut-svg-wrapper"><svg viewBox="-1.1 -1.1 2.2 2.2" class="svg-chart" style="transform:rotate(-90deg);">${slices}<circle cx="0" cy="0" r="0.65" fill="var(--card-bg)" /></svg></div>
+        <div class="chart-legend-box">${legend}</div>
+      </div>`;
+    }
+
+    function renderTopRequestedUris(logs) {
+      const tbody = document.getElementById('topUriTbody');
+      if (!tbody) return;
+      const data = getCounts(logs, 'uri', 5);
+      if (!data.length) { tbody.innerHTML = `<tr><td colspan="3" style="color:#6b7280;text-align:center;padding-top:20px;">No data</td></tr>`; return; }
+      tbody.innerHTML = data.map(([uri,count]) => {
+        const safe = escapeHtml(uri || '/');
+        const encoded = encodeURIComponent(uri || '');
+        return `<tr>
+          <td title="${safe}"><span class="mini-uri-link">${safe}</span></td>
+          <td style="font-weight:700;color:#f1f5f9;">${count}</td>
+          <td class="action-cell">
+            <button class="mini-action" onclick="filterByURI(decodeURIComponent('${encoded}'));event.stopPropagation();">Filter</button>
+            <button class="mini-action exclude" onclick="excludeByURI(decodeURIComponent('${encoded}'));event.stopPropagation();">Exclude</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTopSourceIps(logs) {
+      const tbody = document.getElementById('topIpTbody');
+      if (!tbody) return;
+      const data = getCounts(logs, 'clientIP', 5);
+      if (!data.length) { tbody.innerHTML = `<tr><td colspan="4" style="color:#6b7280;text-align:center;padding-top:20px;">No data</td></tr>`; return; }
+      tbody.innerHTML = data.map(([ip,count]) => {
+        const type = isPrivateIP(ip) ? 'Priv' : 'Pub';
+        const encoded = encodeURIComponent(ip || '');
+        return `<tr>
+          <td><span class="mini-ip-link" onclick="filterByClientIP(decodeURIComponent('${encoded}'))" title="Filter by ${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
+          <td style="color:${type==='Pub'?'#34d399':'#38bdf8'};">${type}</td>
+          <td style="font-weight:700;">${count}</td>
+          <td class="action-cell">
+            <button class="mini-action" onclick="filterByClientIP(decodeURIComponent('${encoded}'));event.stopPropagation();">Filter</button>
+            <button class="mini-action exclude" onclick="excludeByClientIP(decodeURIComponent('${encoded}'));event.stopPropagation();">Exclude</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openUniqueIpInspector() {
+      const modal = document.getElementById('uniqueIpModal');
+      const tbody = document.getElementById('uniqueIpTbody');
+      const countEl = document.getElementById('modalIpCount');
+      if (!modal || !tbody) return;
+      const counts = {};
+      parsedLogs.forEach(l => { const ip=String(l.clientIP||'').trim(); if(ip && ip!=='-') counts[ip]=(counts[ip]||0)+1; });
+      const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+      if(countEl) countEl.textContent=rows.length.toLocaleString();
+      tbody.innerHTML = rows.length ? rows.map(([ip,count]) => {
+        const scope=isPrivateIP(ip)?'Private':'Public'; const enc=encodeURIComponent(ip);
+        return `<tr><td><span class="mini-ip-link" onclick="filterByClientIP(decodeURIComponent('${enc}'));closeUniqueIpInspector()">${escapeHtml(ip)}</span></td><td style="color:${scope==='Public'?'#34d399':'#38bdf8'};">${scope}</td><td style="font-weight:700;">${count}</td><td style="text-align:right;"><button class="mini-action" onclick="filterByClientIP(decodeURIComponent('${enc}'));closeUniqueIpInspector()">Filter</button></td></tr>`;
+      }).join('') : `<tr><td colspan="4" style="text-align:center;padding:12px;color:#6b7280;">No IP records loaded.</td></tr>`;
+      modal.classList.add('show');
+    }
+
+    function closeUniqueIpInspector() { document.getElementById('uniqueIpModal')?.classList.remove('show'); }
+
+    function renderSvgBar(containerId, dataItems, color) {
+      const box = document.getElementById(containerId);
+      if (!dataItems.length) {
+        box.innerHTML = `<span style="color:var(--text-muted); font-size:10px;">No Data</span>`;
+        return;
+      }
+      const max = Math.max(...dataItems.map(d => d[1]));
+      const bars = dataItems.map(item => {
+        const heightPct = (item[1] / max) * 100;
+        const rawLabel = String(item[0]);
+        const label = escapeHtml(rawLabel.length > 18 ? rawLabel.substring(0, 15) + '...' : rawLabel);
+        return `
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;">
+            <div style="font-size:9px; color:#d1d5db; margin-bottom:2px;">${item[1]}</div>
+            <div style="width:70%; background:${color}; height:${heightPct}%; border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:8px; color:var(--text-muted); margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(rawLabel)}">${label}</div>
+          </div>`;
+      }).join('');
+
+      box.innerHTML = `<div style="display:flex; width:100%; height:100%; align-items:flex-end; gap:4px; padding-top:10px;">${bars}</div>`;
+    }
+
+    function renderTablePage() {
+      const tbody=document.getElementById('logTableBody'); const total=filteredLogs.length; const totalPages=Math.ceil(total/pageSize)||1; if(currentPage>totalPages)currentPage=totalPages;
+      const start=(currentPage-1)*pageSize, pageData=filteredLogs.slice(start,start+pageSize);
+      document.getElementById('tableRecordCount').textContent=total?`Showing ${start+1}-${Math.min(start+pageSize,total)} of ${total} entries`:'Showing 0 of 0 entries';
+      if(!pageData.length){tbody.innerHTML=`<tr><td colspan="23" style="text-align:center;padding:32px;color:var(--text-muted);">No matching log entries found.</td></tr>`;return;}
+      tbody.innerHTML=pageData.map((log,idx)=>{
+        const globalIdx=start+idx; const codeClass=log.status>=500?'status-5xx':log.status>=400?'status-4xx':log.status>=300?'status-3xx':'status-2xx';
+        const threatLabel=log.isThreat?log.category:(log.indicators&&log.indicators.length?log.indicators.join(' | '):'Clean');
+        return `<tr class="clickable-row" onclick="openDrawer(${globalIdx})">
+          <td style="color:var(--text-muted);">${escapeHtml(log.timestamp)}</td><td style="color:#818cf8;font-weight:bold;">${escapeHtml(log.hostname)}</td><td>${escapeHtml(log.serverIP||'-')}</td><td>${escapeHtml(log.serverPort||'-')}</td><td style="color:${(log.ipType || (isPrivateIP(log.clientIP)?'PRIVATE':'PUBLIC'))==='PUBLIC'?'#fbbf24':'#38bdf8'}"><span class="client-ip-link" data-ip="${escapeHtml(log.clientIP)}" onclick="event.stopPropagation();filterByClientIP(this.dataset.ip)" title="Filter by this client IP">${escapeHtml(log.clientIP)}</span></td><td>${escapeHtml(log.username||'-')}</td><td>${escapeHtml(log.virtualHost||'-')}</td><td style="font-weight:bold;">${escapeHtml(log.method)}</td><td style="color:white;" title="${escapeHtml(log.uri)}">${escapeHtml(log.uri)}</td><td title="${escapeHtml(log.query||'')}">${escapeHtml(log.query||'-')}</td><td title="${escapeHtml(log.filename||'-')}">${escapeHtml(log.filename||'-')}</td><td>${escapeHtml(log.fileExtension||'-')}</td><td>${escapeHtml(log.httpVersion||'-')}</td><td><span class="badge-status ${codeClass}">${escapeHtml(log.status)}</span></td><td>${escapeHtml(log.substatus||'-')}</td><td>${escapeHtml(log.win32Status||'-')}</td><td>${escapeHtml(log.timeTaken||'-')}</td><td>${escapeHtml(log.responseBytes||'-')}</td><td title="${escapeHtml(log.referrer||'-')}">${escapeHtml(log.referrer||'-')}</td><td title="${escapeHtml(log.userAgent)}">${escapeHtml(log.userAgent)}</td><td style="color:${log.isThreat?'#f43f5e':'var(--text-muted)'};font-weight:bold;">${escapeHtml(threatLabel)}</td><td>${escapeHtml(log.sourceFile||'-')}</td><td style="color:#818cf8;" title="${escapeHtml(log.raw)}">${escapeHtml(log.raw)}</td>
+        </tr>`;}).join('');
+      document.getElementById('paginationText').textContent=`Page ${currentPage} of ${totalPages}`; document.getElementById('btnPrevPage').disabled=currentPage===1; document.getElementById('btnNextPage').disabled=currentPage===totalPages;
+    }
+
+    function sortTable(col) {
+      if (currentSort.column === col) {
+        currentSort.asc = !currentSort.asc;
+      } else {
+        currentSort.column = col;
+        currentSort.asc = true;
+      }
+      applyFiltersAndRender();
+    }
+
+    function setKpiFilter(type) {
+      kpiQuickFilter = type;
+      document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
+      if (type === 'all') document.getElementById('kpiCardAll')?.classList.add('active');
+      if (type === 'threats') document.getElementById('kpiCardThreats')?.classList.add('active');
+      if (type === 'clean') document.getElementById('kpiCardClean')?.classList.add('active');
+      currentPage = 1;
+      applyFiltersAndRender();
+    }
+
+    function setIpPillFilter(type) {
+      activeIpTypeFilter = type;
+      document.querySelectorAll('.ip-pill').forEach(p => p.classList.remove('active'));
+      if (type === 'ALL') document.getElementById('ipPillAll').classList.add('active');
+      if (type === 'PUBLIC') document.getElementById('ipPillPublic').classList.add('active');
+      if (type === 'PRIVATE') document.getElementById('ipPillPrivate').classList.add('active');
+      currentPage = 1;
+      applyFiltersAndRender();
+    }
+
+    function resetFilters() {
+      ['searchInput','ipAddressInput','hostnameInput','statusFilter','methodFilter','categoryFilter','excludeIpInput','excludeHostnameInput','excludeStatusInput','excludePathInput','pathInput','queryInput','usernameInput','userAgentInput','referrerInput','httpVersionInput','responseBytesInput','sourceInput','excludeSearchInput','excludeSourceInput','excludeMethodInput','excludeQueryInput','excludeUsernameInput','excludeUserAgentInput','excludeReferrerInput','excludeHttpVersionInput','excludeResponseBytesInput','excludeCategoryInput'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+      kpiQuickFilter='all'; activeIpTypeFilter='ALL'; currentPage=1; setKpiFilter('all'); setIpPillFilter('ALL'); if(document.getElementById('categoryFilter')) document.getElementById('categoryFilter').value=''; if(document.getElementById('statusFilter')) document.getElementById('statusFilter').value=''; if(document.getElementById('methodFilter')) document.getElementById('methodFilter').value=''; applyFiltersAndRender(); showToast('Filters and exclusions reset.');
+    }
+
+    /* ===== Detailed IR Playbooks ===== */
+    const IR_PLAYBOOKS = {
+      'Cross-Site Scripting (XSS)': {
+        investigate: [
+          'Analyze URL query parameters and request payloads for injected script elements.',
+          'Check access logs for session-token usage from unrecognised browser User-Agents.',
+          'Review DOM manipulation points and front-end JavaScript handlers involved in the affected endpoint.'
+        ],
+        remediate: [
+          'Implement context-aware HTML/JavaScript output encoding across form and API endpoints.',
+          "Deploy a restrictive Content Security Policy (CSP), starting with default-src 'self' and tuning required sources.",
+          'Set HttpOnly and Secure flags on session cookies and review SameSite settings.'
+        ]
+      },
+      'RCE / Command Injection': {
+        investigate: [
+          'Review the URI/query payload for command separators, shell syntax, or execution functions.',
+          'Correlate the request timestamp with child-process creation, service-account activity, and outbound connections.',
+          'Identify the web application process and account that handled the request and check for follow-on activity.'
+        ],
+        remediate: [
+          'Block command execution through strict input allow-listing and parameter validation.',
+          'Run the web service with the minimum required OS privileges and isolate sensitive filesystem paths.',
+          'If execution is confirmed, isolate the host and preserve evidence before cleanup.'
+        ]
+      },
+      'Web Shell Activity': {
+        investigate: [
+          'Inspect the referenced web path and recent file creation or modification activity.',
+          'Correlate the request with process execution, web-service account activity, and outbound network traffic.',
+          'Check adjacent directories for related scripts, upload artifacts, persistence, or timestamp anomalies.'
+        ],
+        remediate: [
+          'Remove or quarantine confirmed unauthorized web scripts after evidence preservation.',
+          'Restrict write permissions for the web-service account and review upload functionality.',
+          'Rotate credentials and redeploy from a known-good application image when compromise is confirmed.'
+        ]
+      },
+      'SQL Injection (SQLi)': {
+        investigate: [
+          'Review the affected query parameter and identify SQL operators, union statements, or encoded payloads.',
+          'Correlate the request with application and database logs for errors, unusual queries, or data access.',
+          'Check whether the same source IP attempted related endpoints or parameters.'
+        ],
+        remediate: [
+          'Use parameterized queries or prepared statements for database access.',
+          'Apply strict server-side input validation and appropriate WAF protections.',
+          'Review exposed credentials and database permissions if unauthorized data access occurred.'
+        ]
+      },
+      'Path Traversal / LFI': {
+        investigate: [
+          'Decode the request path and parameters and identify traversal sequences or sensitive-file targets.',
+          'Review application/file-access telemetry for reads outside the intended web directory.',
+          'Check whether sensitive files were returned in the response and correlate with the source IP.'
+        ],
+        remediate: [
+          'Canonicalize and validate file paths against an allow-listed base directory.',
+          'Block traversal sequences at the application and WAF layers.',
+          'Remove unnecessary filesystem access from the web-service account.'
+        ]
+      },
+      'File Inclusion Wrapper': {
+        investigate: [
+          'Review the affected parameter for php://, data://, file://, phar://, or similar wrappers.',
+          'Correlate the request with application file reads, script execution, and outbound connections.',
+          'Determine whether a local or remote resource was actually loaded.'
+        ],
+        remediate: [
+          'Disable unnecessary URL/file wrappers in the application runtime.',
+          'Allow-list permitted resource paths and validate file parameters server-side.',
+          'Review application configuration for unsafe include or upload behavior.'
+        ]
+      },
+      'Server-Side Request Forgery (SSRF)': {
+        investigate: [
+          'Identify the requested destination and determine whether it targets loopback, internal, or cloud metadata services.',
+          'Correlate the request with server-side DNS, proxy, firewall, and outbound connection telemetry.',
+          'Review the application feature that accepts the destination and determine whether redirects can bypass validation.'
+        ],
+        remediate: [
+          'Use strict destination allow-lists and block private, loopback, link-local, and metadata ranges.',
+          'Apply outbound network controls from the application tier.',
+          'Disable unnecessary server-side URL fetching and validate redirects before following them.'
+        ]
+      },
+      'Log4Shell / JNDI Injection': {
+        investigate: [
+          'Inspect the request headers, URI, and parameters for JNDI lookup patterns.',
+          'Correlate the event with Java process activity and LDAP/RMI/DNS/HTTP outbound connections.',
+          'Identify the affected Java applications and determine their Log4j version and exposure.'
+        ],
+        remediate: [
+          'Upgrade affected Log4j components to the vendor-supported fixed version.',
+          'Restrict unnecessary outbound LDAP/RMI and other lookup protocols from Java services.',
+          'Monitor for post-exploitation process and persistence activity on affected hosts.'
+        ]
+      },
+      'Sensitive File / Config Exposure Probe': {
+        investigate: [
+          'Review the requested sensitive path and determine whether the resource exists and was served.',
+          'Check the response status/size and correlate repeated attempts from the same source.',
+          'If content was exposed, identify credentials, tokens, keys, or configuration data contained in it.'
+        ],
+        remediate: [
+          'Block sensitive files and directories at the web server/WAF layer.',
+          'Remove exposed secrets from web-accessible locations and rotate compromised credentials.',
+          'Add deployment checks to prevent configuration, repository, backup, and secret files from being published.'
+        ]
+      },
+      'XXE / XML Entity Injection': {
+        investigate: [
+          'Review XML payloads for DOCTYPE and external entity declarations.',
+          'Correlate the request with local file access and outbound network activity from the XML-processing service.',
+          'Identify the parser/library and determine whether external entity processing is enabled.'
+        ],
+        remediate: [
+          'Disable external entity and DTD processing where it is not required.',
+          'Use hardened XML parser configurations and validate XML input.',
+          'Restrict the application service account and its outbound network access.'
+        ]
+      },
+      'Server-Side Template Injection (SSTI)': {
+        investigate: [
+          'Review template expressions in URI/query parameters and identify the server-side template engine.',
+          'Correlate with application errors, template rendering, and process execution telemetry.',
+          'Determine whether the supplied expression reached a privileged template context.'
+        ],
+        remediate: [
+          'Do not treat untrusted input as executable template code.',
+          'Use strict template escaping, sandboxing, and allow-listed template variables.',
+          'Upgrade vulnerable template engines and review affected application endpoints.'
+        ]
+      },
+      'HTTP Request Smuggling / CRLF Probe': {
+        investigate: [
+          'Review request framing and identify conflicting Content-Length or Transfer-Encoding behavior.',
+          'Compare proxy/WAF and origin-server parsing of the same request.',
+          'Check for follow-on requests, cache poisoning indicators, or unexpected backend responses.'
+        ],
+        remediate: [
+          'Normalize and reject ambiguous HTTP request framing.',
+          'Align parsing behavior across reverse proxies, WAFs, load balancers, and application servers.',
+          'Patch affected HTTP components and add regression tests for conflicting headers.'
+        ]
+      },
+      'Automated Recon Scanner': {
+        investigate: [
+          'Review the User-Agent, request rate, URI patterns, and status-code distribution.',
+          'Determine whether the source is an approved security scanner or an unapproved external scanner.',
+          'Correlate activity across other hosts, virtual hosts, and exposed applications.'
+        ],
+        remediate: [
+          'Validate approved scanning windows and scope before blocking.',
+          'Rate-limit or block unapproved scanners at the WAF/edge layer.',
+          'Tune monitoring to distinguish approved security testing from external reconnaissance.'
+        ]
+      },
+      'Custom Web Shell / Backdoor': {
+        investigate: ['Inspect the referenced web path and filesystem changes, then correlate with process and network activity.', 'Review the application account and deployment history for unauthorized changes.'],
+        remediate: ['Quarantine confirmed unauthorized scripts after evidence preservation.', 'Restrict write access to web directories and redeploy from a known-good source when required.']
+      },
+      'Custom Internal Policy Violation': {
+        investigate: ['Review the request, authenticated identity, source IP, and application context that triggered the internal policy rule.', 'Correlate with administrative activity and change records.'],
+        remediate: ['Remove unauthorized access or configuration changes and validate the approved administrative workflow.', 'Review the affected account and rotate credentials if misuse is confirmed.']
+      },
+      'Behavior: Brute Force Hammering (401s)': {
+        investigate: ['Review the targeted endpoint, username/account indicators, request rate, and source IP.', 'Correlate authentication failures with successful logins and other activity from the same source.'],
+        remediate: ['Apply rate limiting or account lockout controls appropriate to the application.', 'Block or challenge the source where confirmed malicious and review targeted accounts.']
+      },
+      'Behavior: Repeated Access-Denied (403) Probing': {
+        investigate: ['Review the endpoints receiving repeated 403 responses and identify common path or privilege patterns.', 'Determine whether the source is an approved scanner or a user repeatedly attempting unauthorized resources.'],
+        remediate: ['Apply appropriate WAF/edge rate limiting and block confirmed abusive sources.', 'Review authorization controls on the targeted endpoints.']
+      },
+      'Behavior: 404 Recon Storm': {
+        investigate: ['Review the requested paths and identify repeated discovery patterns or known sensitive application paths.', 'Correlate the source with other hosts, User-Agents, and security events.'],
+        remediate: ['Rate-limit or block confirmed automated discovery at the WAF/edge layer.', 'Remove unnecessary exposed endpoints and monitor for successful follow-on requests.']
+      }
+    };
+
+    function renderPlaybookHtml(items) {
+      return '<ul style="margin:0;padding-left:18px;">' + items.map(item => `<li style="margin:0 0 5px 0;">${escapeHtml(item)}</li>`).join('') + '</ul>';
+    }
+
+    function getDetailedPlaybook(category) {
+      return IR_PLAYBOOKS[category] || {
+        investigate: ['Review the request, source IP, timestamp, URI/query parameters, User-Agent, and related application telemetry.', 'Correlate the event with nearby requests and authentication or process activity.'],
+        remediate: ['Validate the detection before containment and preserve relevant evidence.', 'Apply appropriate application, WAF, access-control, or rate-limiting controls based on confirmed activity.']
+      };
+    }
+
+    function openDrawer(index) {
+      const log = filteredLogs[index];
+      if (!log) return;
+      currentSelectedLog = log;
+
+      document.getElementById('drawerRawPayload').textContent = log.raw;
+      document.getElementById('drawerClientIp').textContent = `${log.clientIP} (${log.ipType})`;
+      document.getElementById('drawerTimestamp').textContent = log.timestamp;
+      document.getElementById('drawerMethodStatus').textContent = `${log.method} ${log.status}`;
+      
+
+      document.getElementById('drawerUri').textContent = log.uri;
+      document.getElementById('drawerUserAgent').textContent = log.userAgent;
+      {const e=document.getElementById('drawerReferrer');if(e)e.textContent=log.referrer||'-';}
+      {const e=document.getElementById('drawerResponseBytes');if(e)e.textContent=log.responseBytes||'-';}
+      {const e=document.getElementById('drawerHttpVersion');if(e)e.textContent=log.httpVersion||'-';}
+      {const e=document.getElementById('drawerParserSource');if(e)e.textContent=`${log.parser||'Unknown'} | ${log.sourceFile||'Unknown'}:${log.sourceLine||'-'}`;}
+
+      const headerText = log.isThreat ? `⚠️ IR PLAYBOOK ACTIVE THREAT: ${log.category.toUpperCase()}` : '⚠️ IR PLAYBOOK ACTIVE THREAT: CLEAN';
+      document.getElementById('drawerPlaybookHeader').textContent = headerText;
+
+      const pb = log.isThreat ? getDetailedPlaybook(log.category) : {
+        investigate: ['Review normal traffic flow, source IP history, request pattern, and authentication context.', 'Confirm the event matches the expected application baseline before closing the investigation.'],
+        remediate: ['No remediation is required for clean traffic.', 'Continue normal monitoring and retain the event for investigation context.']
+      };
+      document.getElementById('drawerInvestigateText').innerHTML = renderPlaybookHtml(pb.investigate);
+      document.getElementById('drawerRemediationText').innerHTML = renderPlaybookHtml(pb.remediate);
+
+      document.getElementById('drawerOverlay').classList.add('show');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerOverlay').classList.remove('show');
+    }
+
+    function closeModals() {
+      document.getElementById('debugModal').classList.remove('show');
+      document.getElementById('aboutModal').classList.remove('show');
+    }
+
+    function copyRawPayload() {
+      if (!currentSelectedLog) return;
+      navigator.clipboard.writeText(currentSelectedLog.raw).then(() => {
+        showToast('Raw log payload copied to clipboard.');
+      });
+    }
+
+    function filterByURI(uri) {
+      const el=document.getElementById('pathInput');
+      if(el) el.value=uri || '';
+      currentPage=1; kpiQuickFilter='all'; applyFiltersAndRender();
+      showToast(`Filtered by URI: ${uri}`);
+    }
+
+    function excludeByURI(uri) {
+      const el=document.getElementById('excludePathInput');
+      if(el) el.value=uri || '';
+      currentPage=1; applyFiltersAndRender();
+      showToast(`Excluded URI: ${uri}`);
+    }
+
+    function excludeByClientIP(ip) {
+      const el=document.getElementById('excludeIpInput');
+      if(el) el.value=ip || '';
+      currentPage=1; applyFiltersAndRender();
+      showToast(`Excluded Client IP: ${ip}`);
+    }
+
+    function filterByClientIP(ip) {
+      if (!ip) return;
+      const el=document.getElementById('ipAddressInput');
+      if (el) el.value=ip;
+      currentPage=1;
+      kpiQuickFilter='all';
+      activeIpTypeFilter='ALL';
+      document.querySelectorAll('.ip-pill').forEach(p=>p.classList.remove('active'));
+      document.getElementById('ipPillAll')?.classList.add('active');
+      applyFiltersAndRender();
+      showToast(`Filtered by Client IP: ${ip}`);
+    }
+
+    function instantFilterIP() {
+      if (!currentSelectedLog) return;
+      switchFilterTab('filters');
+      document.getElementById('ipAddressInput').value = currentSelectedLog.clientIP;
+      closeDrawer();
+      applyFiltersAndRender();
+      showToast(`Filtered by IP: ${currentSelectedLog.clientIP}`);
+    }
+
+    function instantExcludeIP() {
+      if (!currentSelectedLog) return;
+      switchFilterTab('exclusions');
+      document.getElementById('excludeIpInput').value = currentSelectedLog.clientIP;
+      closeDrawer();
+      applyFiltersAndRender();
+      showToast(`Excluded IP: ${currentSelectedLog.clientIP}`);
+    }
+
+    function instantExcludeStatus() {
+      if (!currentSelectedLog) return;
+      switchFilterTab('exclusions');
+      document.getElementById('excludeStatusInput').value = currentSelectedLog.status;
+      closeDrawer();
+      applyFiltersAndRender();
+      showToast(`Excluded Status Code: ${currentSelectedLog.status}`);
+    }
+
+    function instantExcludePath() {
+      if (!currentSelectedLog) return;
+      switchFilterTab('exclusions');
+      document.getElementById('excludePathInput').value = currentSelectedLog.uri;
+      closeDrawer();
+      applyFiltersAndRender();
+      showToast(`Excluded Path: ${currentSelectedLog.uri}`);
+    }
+
+    function populateCategoryDropdown() {
+      const input=document.getElementById('categoryFilter');
+      if(!input) return;
+      const cats=[...new Set(parsedLogs.map(l=>l.category).filter(Boolean))].sort();
+      input.setAttribute('list','categorySuggestions');
+      let dl=document.getElementById('categorySuggestions');
+      if(!dl){ dl=document.createElement('datalist'); dl.id='categorySuggestions'; document.body.appendChild(dl); }
+      dl.innerHTML=cats.map(c=>`<option value="${escapeHtml(c)}"></option>`).join('');
+    }
+
+    function exportLogs(format) {
+      document.getElementById('exportDropdownMenu').classList.remove('show');
+      if (!filteredLogs.length) return showToast('No logs to export.');
+      let content = '', mime = 'text/plain', name = `ir_logs_export.${format}`;
+
+      if (format === 'json') {
+        content = JSON.stringify(filteredLogs, null, 2);
+        mime = 'application/json';
+      } else if (format === 'csv') {
+        const headers = ['Timestamp','Hostname','ServerIP','ServerPort','ClientIP','IPType','Username','VirtualHost','Method','URI','QueryString','Filename','FileExtension','HTTPVersion','Status','Substatus','Win32Status','TimeTaken','ResponseBytes','Referrer','UserAgent','ThreatTag','Parser','SourceFile','SourceLine','RawLog'];
+        const rows = filteredLogs.map(l => [l.timestamp,l.hostname,l.serverIP,l.serverPort,l.clientIP,l.ipType,l.username,l.virtualHost,l.method,l.uri,l.query,l.filename,l.fileExtension,l.httpVersion,l.status,l.substatus,l.win32Status,l.timeTaken,l.responseBytes,l.referrer,l.userAgent,l.category,l.parser,l.sourceFile,l.sourceLine,l.raw].map(escapeCSVField).join(','));
+        content = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        mime = 'text/csv;charset=utf-8';
+      } else {
+        content = '\uFEFF' + filteredLogs.map(l => sanitizeForTeams(l.raw)).join('\r\n');
+      }
+
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      logDebug(`Exported ${filteredLogs.length} logs as ${format.toUpperCase()}`);
+      showToast(`Exported ${filteredLogs.length} entries.`);
+    }
+
+    function switchCompactTab(group, pane, btn){
+      const prefix=group==='search'?'search':'exclude';
+      const targetId=prefix+(pane==='global'?'GlobalPane':'FieldsPane');
+      document.getElementById(prefix+'GlobalPane').classList.toggle('active', pane==='global');
+      document.getElementById(prefix+'FieldsPane').classList.toggle('active', pane==='fields');
+      btn.parentElement.querySelectorAll('.compact-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    }
+
+
+    function getInputValue(id) { const el=document.getElementById(id); return el ? String(el.value||'').trim() : ''; }
+    function switchFilterTab(tab) {
+      const a=document.getElementById('btnTabFilters'), b=document.getElementById('btnTabExclusions'), c=document.getElementById('filtersTabContent'), d=document.getElementById('exclusionsTabContent');
+      if(!a||!b||!c||!d) return; if(tab==='filters'){a.classList.add('active');b.classList.remove('active');c.style.display='grid';d.style.display='none';}else{b.classList.add('active');a.classList.remove('active');d.style.display='grid';c.style.display='none';}
+    }
+
+    window.onload = function() {
+      const fileInput = document.getElementById('logFileInput');
+
+
+    async function ingestFileStreaming(file) {
+      let buffer = '';
+      let lineNumber = 0;
+      let fileParsed = 0, fileFailed = 0, fileSkipped = 0;
+      const failedSamples = [];
+      let lastYield = 0;
+
+      const processLine = (line) => {
+        lineNumber++;
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (trimmed.startsWith('#')) {
+          fileSkipped++;
+          parseLogLine(line, file.name); // retain IIS #Fields state without storing the line
+          return;
+        }
+        let result = null;
+        try {
+          result = parseLogLine(line, file.name);
+        } catch (err) {
+          fileFailed++;
+          if (failedSamples.length < 25) failedSamples.push(`  Line ${lineNumber}: parser error: ${err.message}`);
+          return;
+        }
+        if (!result) { fileSkipped++; return; }
+        normalizeEvent(result);
+        result.sourceFile = file.name;
+        result.sourceLine = lineNumber;
+        parsedLogs.push(result);
+        if (result.formatOk === false) {
+          fileFailed++;
+          if (failedSamples.length < 25) failedSamples.push(`  Line ${lineNumber}: ${trimmed.substring(0,140)}`);
+        } else fileParsed++;
+      };
+
+      if (file.stream && typeof TextDecoderStream !== 'undefined') {
+        const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+        while (true) {
+          const {value, done} = await reader.read();
+          if (done) break;
+          buffer += value;
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            processLine(line);
+            if (++lastYield >= 500) {
+              lastYield = 0;
+              await new Promise(resolve => setTimeout(resolve, 0));
+            }
+          }
+        }
+        if (buffer) processLine(buffer);
+      } else {
+        // Compatibility fallback. Modern Chromium/Edge use the streaming path above.
+        const text = await file.text();
+        let start = 0;
+        for (let i = 0; i <= text.length; i++) {
+          if (i === text.length || text.charCodeAt(i) === 10) {
+            let line = text.slice(start, i);
+            if (line.endsWith('\r')) line = line.slice(0, -1);
+            processLine(line);
+            start = i + 1;
+            if (++lastYield >= 500) {
+              lastYield = 0;
+              await new Promise(resolve => setTimeout(resolve, 0));
+            }
+          }
+        }
+      }
+
+      return { fileParsed, fileFailed, fileSkipped, lineNumber, failedSamples };
+    }
+
+      fileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        const statusEl=document.getElementById('engineStatusText');
+        try {
+          statusEl.textContent='PARSING LOGS...';
+          setPipelineStage('stageParse','Reading file(s)');
+          logDebug(`Starting streaming ingestion of ${files.length} file(s)...`);
+
+          for (const file of files) {
+            iisHeaderFields=null;
+            logDebug(`Streaming ${file.name} (${file.size.toLocaleString()} bytes)...`);
+            setPipelineStage('stageParse',`${file.name} — streaming`);
+            const result = await ingestFileStreaming(file);
+            logDebug(`${file.name}: ${result.lineNumber} lines total — ${result.fileParsed} parsed OK, ${result.fileFailed} failed, ${result.fileSkipped} header/comment lines skipped.`);
+            if(result.failedSamples.length) logDebug(`${file.name}: sample unparsed lines (kept with fallback values, flagged unreliable):\n${result.failedSamples.join('\n')}${result.fileFailed>result.failedSamples.length?`\n  ...and ${result.fileFailed-result.failedSamples.length} more`:''}`);
+          }
+
+          setPipelineStage('stageDetect',`${parsedLogs.length.toLocaleString()} events`);
+          await new Promise(resolve=>setTimeout(resolve,0));
+          runThreatDetectionEngine(parsedLogs);
+          setPipelineStage('stageCorrelate','Time-window + source correlation');
+          await new Promise(resolve=>setTimeout(resolve,0));
+          populateCategoryDropdown();
+          setPipelineStage('stageInvestigate','Indexes + findings ready');
+          const totalFailed=parsedLogs.filter(l=>l.formatOk===false).length;
+          showToast(totalFailed>0?`Loaded ${parsedLogs.length.toLocaleString()} entries (${totalFailed.toLocaleString()} need parser review — see Debug Log).`:`Loaded ${parsedLogs.length.toLocaleString()} total entries.`);
+          applyFiltersAndRender();
+          setPipelineStage('stageOutput','Ready');
+          statusEl.textContent=`ACTIVE (${parsedLogs.length.toLocaleString()} LOGS)`;
+          fileInput.value='';
+        } catch(err) {
+          console.error(err);
+          logDebug(`INGESTION ERROR: ${err && err.stack ? err.stack : err}`);
+          statusEl.textContent='INGESTION ERROR — SEE DEBUG LOG';
+          showToast(`Log ingestion failed: ${err.message || err}`);
+          setPipelineStage('stageOutput','Error');
+          fileInput.value='';
+        }
+      });
+
+      // Filter and Exclusion Handlers
+      ['searchInput','ipAddressInput','hostnameInput','statusFilter','methodFilter','pathInput','queryInput','usernameInput','userAgentInput','referrerInput','httpVersionInput','responseBytesInput','sourceInput','categoryFilter','excludeIpInput','excludeHostnameInput','excludeStatusInput','excludeMethodInput','excludePathInput','excludeQueryInput','excludeUsernameInput','excludeUserAgentInput','excludeReferrerInput','excludeHttpVersionInput','excludeResponseBytesInput','excludeSourceInput','excludeCategoryInput','excludeSearchInput'].forEach(id => {
+        const el=document.getElementById(id);
+        if(el) { el.addEventListener('input',()=>{currentPage=1;applyFiltersAndRender();}); el.addEventListener('change',()=>{currentPage=1;applyFiltersAndRender();}); }
+      });
+
+      // Pagination / page-size selector
+      const pageSizeEl=document.getElementById('pageSizeSelect'); if(pageSizeEl) pageSizeEl.addEventListener('change',(e)=>{
+        pageSize = parseInt(e.target.value, 10) || 50;
+        currentPage = 1;
+        renderTablePage();
+      });
+      document.getElementById('btnPrevPage').onclick = () => { if (currentPage > 1) { currentPage--; renderTablePage(); } };
+      document.getElementById('btnNextPage').onclick = () => { currentPage++; renderTablePage(); };
+
+      // Unique Client IP Inspector
+      const btnCloseIpModal=document.getElementById('btnCloseIpModal');
+      if(btnCloseIpModal) btnCloseIpModal.onclick=closeUniqueIpInspector;
+      const uniqueIpModal=document.getElementById('uniqueIpModal');
+      if(uniqueIpModal) uniqueIpModal.addEventListener('click',(e)=>{ if(e.target===uniqueIpModal) closeUniqueIpInspector(); });
+
+      // Buttons
+      document.getElementById('btnClearLogs').onclick = () => {
+        parsedLogs = []; filteredLogs = []; currentPage = 1;
+        applyFiltersAndRender();
+        logDebug('All logs cleared from memory.');
+        showToast('Logs cleared.');
+      };
+
+      // Export Dropdown Toggle
+      const btnExportToggle = document.getElementById('btnExportToggle');
+      const exportDropdownMenu = document.getElementById('exportDropdownMenu');
+      btnExportToggle.onclick = (e) => {
+        e.stopPropagation();
+        exportDropdownMenu.classList.toggle('show');
+      };
+
+      // Debug and About Modals
+      document.getElementById('btnDebugLog').onclick = () => {
+        document.getElementById('debugModal').classList.add('show');
+      };
+      document.getElementById('btnAbout').onclick = () => {
+        document.getElementById('aboutModal').classList.add('show');
+      };
+
+      // Column Toggle Menu
+      const btnToggleCols = document.getElementById('btnToggleCols');
+      const colToggleMenu = document.getElementById('colToggleMenu');
+      btnToggleCols.onclick = (e) => { e.stopPropagation(); colToggleMenu.classList.toggle('show'); };
+      
+      document.onclick = () => {
+        colToggleMenu.classList.remove('show');
+        exportDropdownMenu.classList.remove('show');
+      };
+      // Keep the Columns menu open while selecting multiple fields.
+      colToggleMenu.onclick = (e) => { e.stopPropagation(); };
+
+      colToggleMenu.querySelectorAll('input').forEach(chk => {
+        chk.onchange = (e) => {
+          const colIdx = parseInt(e.target.getAttribute('data-col'), 10);
+          const table = document.getElementById('mainLogTable');
+          const display = e.target.checked ? '' : 'none';
+          
+          table.querySelectorAll(`tr`).forEach(row => {
+            if (row.children[colIdx]) row.children[colIdx].style.display = display;
+          });
+        };
+      });
+
+      // Table Resizer Dragging Engine
+      let isResizing = false;
+      let currentTh = null;
+      let startX = 0, startWidth = 0;
+
+      document.querySelectorAll('th .resizer').forEach(resizer => {
+        resizer.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          isResizing = true;
+          currentTh = e.target.parentElement;
+          startX = e.clientX;
+          startWidth = currentTh.offsetWidth;
+          resizer.classList.add('resizing');
+        });
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing || !currentTh) return;
+        const diff = e.clientX - startX;
+        currentTh.style.width = `${Math.max(40, startWidth + diff)}px`;
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          document.querySelectorAll('.resizer').forEach(r => r.classList.remove('resizing'));
+        }
+      });
+
+      applyFiltersAndRender();
+    };
+  
+
+
+  </script>
+</body>
+</html>

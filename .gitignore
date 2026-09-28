@@ -1,0 +1,27 @@
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local investigation data — do NOT commit evidence
+logs/
+evidence/
+cases/
+exports/
+*.pcap
+*.pcapng
+*.evtx
+*.etl
+*.dump
+*.dmp
+*.mem
+
+# Temporary/generated files
+*.tmp
+*.temp
+*.bak
+*.backup
+npm-debug.log*

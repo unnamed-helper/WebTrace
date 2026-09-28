@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "WebTrace"
+message: "If you use this project in research, training, or a technical article, please cite the project."
+type: software
+authors:
+  - family-names: "Sabir"
+    given-names: "Arslan"
+version: "1.0.0"
+date-released: 2026-09-28
+license: MIT
+repository-code: "https://github.com/YOUR-USERNAME/WebTrace"
+abstract: "A self-contained, local-first HTTP log analysis and DFIR triage tool with parsing, filtering, detection, behavioral indicators, and IR playbooks."
