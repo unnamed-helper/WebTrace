@@ -1,4 +1,0 @@
-# Replace YOUR-USERNAME with the GitHub account that owns WebTrace.
-# CODEOWNERS makes the maintainer a required reviewer when branch protection
-# is configured to require CODEOWNER approval.
-* @YOUR-USERNAME
